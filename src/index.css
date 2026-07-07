@@ -98,6 +98,55 @@
     color: #ffffff !important;
     border-color: #065f46 !important;     /* Emerald-800 */
   }
+
+  /* Mobile Touch Target and Interaction Optimizations */
+  @media (pointer: coarse), (max-width: 1024px) {
+    /* Set minimum touch target size (44px) for interactive elements on mobile */
+    button, 
+    a, 
+    select,
+    input[type="button"],
+    input[type="submit"],
+    [role="button"],
+    [role="tab"] {
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+
+    /* Remove native blue tap highlight overlay on mobile browsers */
+    button, a, select, input, textarea, [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Style active tap feedback for interactive elements */
+    button:active, 
+    [role="button"]:active,
+    a:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+      transition: transform 0.1s ease;
+    }
+
+    /* Make checkboxes and radio buttons larger and easier to toggle on mobile */
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 22px !important;
+      height: 22px !important;
+      cursor: pointer;
+    }
+
+    /* Support generous tap spacing for sidebar and navigation tabs */
+    aside nav a,
+    .mobile-nav-item,
+    [role="tab"] {
+      padding-top: 12px !important;
+      padding-bottom: 12px !important;
+    }
+  }
 }
 
 @media print {

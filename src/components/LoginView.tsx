@@ -39,6 +39,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
       case 'yemekhane': return <UtensilsCrossed className="w-5 h-5 text-teal-600" />;
       case 'teknik': return <Wrench className="w-5 h-5 text-orange-600" />;
       case 'guvenlik': return <Shield className="w-5 h-5 text-slate-600" />;
+      case 'gonullu': return <Users className="w-5 h-5 text-emerald-600" />;
       default: return <User className="w-5 h-5 text-gray-600" />;
     }
   };
@@ -52,6 +53,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
       case 'yemekhane': return 'bg-teal-50 text-teal-700 border-teal-200';
       case 'teknik': return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'guvenlik': return 'bg-slate-50 text-slate-700 border-slate-200';
+      case 'gonullu': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
@@ -65,6 +67,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
       case 'yemekhane': return 'Öğün Planlama, Günlük Menü ve Alerjen Katılımcı Filtreleme.';
       case 'teknik': return 'Arıza Talepleri, Sarf Malzemeleri ve Tesis Alanı Teknik Takibi.';
       case 'guvenlik': return 'Ziyaretçi Takibi, Nöbet Çizelgeleri, Olay Raporlama ve Güvenlik Kameraları.';
+      case 'gonullu': return 'Gönüllü Yönetimi: Müracaat kayıtları ve kamp takvimi yönetimi.';
       default: return 'Kendi yetki alanındaki modüller.';
     }
   };
@@ -247,6 +250,37 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
             <span className="text-4xs text-gray-400 font-black uppercase tracking-widest block text-center">BİRİM GÖREVLİSİ HIZLI GİRİŞ SEÇENEKLERİ</span>
             <div className="max-h-[300px] overflow-y-auto pr-1 space-y-4">
               
+              {/* Gönüllü Yönetimi Giriş Alanı */}
+              <div className="space-y-2">
+                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Gönüllü Yönetimi</h3>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {users.filter(u => u.role === 'gonullu').map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => handlePresetClick(user)}
+                      disabled={isLoading}
+                      className="p-3.5 border rounded-2xl text-left transition flex items-start gap-4 group cursor-pointer hover:shadow-md focus:outline-none bg-emerald-50/30 border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50/50"
+                    >
+                      <div className="p-2 bg-white border border-emerald-200 rounded-xl shrink-0 group-hover:scale-110 transition duration-150 shadow-sm">
+                        {getRoleIcon(user.role)}
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-black truncate leading-tight text-emerald-950 group-hover:text-emerald-800">{user.name}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 border rounded-lg text-[9px] font-extrabold uppercase inline-block leading-none ${getRoleBadgeColor(user.role)}`}>
+                          {user.roleName} PORTALI
+                        </span>
+                        <p className="text-[10px] text-emerald-900/70 font-semibold leading-relaxed">
+                          {getRoleTabsDescription(user)}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Yönetim Kategorisi */}
               <div className="space-y-2">
                 <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Yönetim ve İdare</h3>

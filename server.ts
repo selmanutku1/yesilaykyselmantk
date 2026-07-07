@@ -193,6 +193,70 @@ async function startServer() {
     }
   });
 
+  // Google Calendar API proxy route
+  app.get('/api/google-calendar/events', async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      const calendarId = req.query.calendarId || 'primary';
+      
+      if (!authHeader) {
+        // Return realistic upcoming events if no token is passed (fallback demo mode)
+        const sampleEvents = [
+          {
+            id: 'g1',
+            summary: 'Sabah Spinning & Doğa Yürüyüşü',
+            description: 'Güne enerjik bir başlangıç için eğitmen eşliğinde doğa yürüyüşü.',
+            location: 'Ormanlık Parkur',
+            start: { dateTime: new Date(Date.now() + 2 * 3600 * 1000).toISOString() }
+          },
+          {
+            id: 'g2',
+            summary: 'Yeşilay Teknoloji Bağımlılığı Semineri',
+            description: 'Teknoloji bağımlılığıyla mücadele üzerine eğitici sunum.',
+            location: 'Büyük Amfi',
+            start: { dateTime: new Date(Date.now() + 26 * 3600 * 1000).toISOString() }
+          },
+          {
+            id: 'g3',
+            summary: 'Grup Atölyesi: Akıl Oyunları',
+            description: 'Takım çalışması ve stratejik düşünme becerileri atölyesi.',
+            location: 'Atölye B',
+            start: { dateTime: new Date(Date.now() + 50 * 3600 * 1000).toISOString() }
+          },
+          {
+            id: 'g4',
+            summary: 'Kamp Ateşi & Akustik Dinleti',
+            description: 'Günün yorgunluğunu müzik ve sohbetle atıyoruz.',
+            location: 'Ateş Alanı',
+            start: { dateTime: new Date(Date.now() + 74 * 3600 * 1000).toISOString() }
+          }
+        ];
+        return res.json({ items: sampleEvents });
+      }
+
+      const cleanToken = authHeader.replace('Bearer ', '');
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(String(calendarId))}/events?maxResults=10&orderBy=startTime&singleEvents=true&timeMin=${encodeURIComponent(new Date().toISOString())}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${cleanToken}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return res.status(response.status).json({ error: `Google API error: ${errorText}` });
+      }
+
+      const data = await response.json();
+      return res.json(data);
+    } catch (err: any) {
+      console.error('Error in google calendar proxy route', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // Vite middleware setup
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

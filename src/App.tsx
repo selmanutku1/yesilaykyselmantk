@@ -60,6 +60,7 @@ import DijitalArsivView from './components/DijitalArsivView';
 import IncidentLogsView from './components/IncidentLogsView';
 import SurveyAnalysisView from './components/SurveyAnalysisView';
 import LoginView from './components/LoginView';
+import PublicCalendarView from './components/PublicCalendarView';
 import { OnboardingGuide } from './components/OnboardingGuide';
 import UserProfileModal from './components/UserProfileModal';
 import Screensaver from './components/Screensaver';
@@ -123,7 +124,7 @@ export interface LoginUser {
   id: string;
   name: string;
   username: string;
-  role: 'admin' | 'mudur' | 'kayit' | 'saglik' | 'yemekhane' | 'teknik' | 'guvenlik';
+  role: 'admin' | 'mudur' | 'kayit' | 'saglik' | 'yemekhane' | 'teknik' | 'guvenlik' | 'gonullu';
   roleName: string;
   allowedTabs: ('dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit')[];
 }
@@ -143,7 +144,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'mudur',
     role: 'mudur',
     roleName: 'Kamp Müdürü',
-    allowedTabs: ['dashboard', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit']
+    allowedTabs: ['dashboard', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit']
   },
   {
     id: 'S02',
@@ -151,7 +152,15 @@ export const USERS_LIST: LoginUser[] = [
     username: 'kayit',
     role: 'kayit',
     roleName: 'Kayıt ve Yerleşim Sorumlusu',
-    allowedTabs: ['bungalov', 'katilimci', 'kayit']
+    allowedTabs: ['bungalov', 'katilimci']
+  },
+  {
+    id: 'GON01',
+    name: 'Gönüllü Yönetimi',
+    username: 'gonullu',
+    role: 'gonullu',
+    roleName: 'Gönüllü Yönetimi',
+    allowedTabs: ['dashboard', 'kayit']
   },
   {
     id: 'S06',
@@ -209,7 +218,36 @@ export default function App() {
   const [shifts, setShifts] = useState<ShiftAssignment[]>(INITIAL_SHIFTS);
   const [users, setUsers] = useState<LoginUser[]>(() => {
     const saved = localStorage.getItem('kys_users');
-    return saved ? JSON.parse(saved) : USERS_LIST;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as LoginUser[];
+        // Perform a robust merge: ensure every default user in USERS_LIST exists by ID
+        const merged = [...parsed];
+        let changed = false;
+        
+        USERS_LIST.forEach(defaultUser => {
+          const existingIdx = merged.findIndex(u => u.id === defaultUser.id || u.username === defaultUser.username);
+          if (existingIdx === -1) {
+            merged.push(defaultUser);
+            changed = true;
+          } else {
+            // If the user role has changed or is updated in USERS_LIST, heal it
+            if (merged[existingIdx].role !== defaultUser.role) {
+              merged[existingIdx] = defaultUser;
+              changed = true;
+            }
+          }
+        });
+        
+        if (changed) {
+          localStorage.setItem('kys_users', JSON.stringify(merged));
+        }
+        return merged;
+      } catch (err) {
+        console.error('Error parsing kys_users:', err);
+      }
+    }
+    return USERS_LIST;
   });
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('kys_notifications');
@@ -237,6 +275,24 @@ export default function App() {
     }
     return null;
   });
+
+  // Public Calendar routing state
+  const [isPublicCalendar, setIsPublicCalendar] = useState<boolean>(() => {
+    return window.location.search.includes('view=takvim') || window.location.hash === '#takvim';
+  });
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const isPublic = window.location.search.includes('view=takvim') || window.location.hash === '#takvim';
+      setIsPublicCalendar(isPublic);
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
 
   // Profile editing state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
@@ -268,7 +324,7 @@ export default function App() {
 
     const getSettings = () => {
       const enabled = localStorage.getItem('kys_screensaver_enabled') !== 'false';
-      const timeoutSec = parseInt(localStorage.getItem('kys_screensaver_timeout') || '30') || 30;
+      const timeoutSec = parseInt(localStorage.getItem('kys_screensaver_timeout') || '60') || 60;
       return { enabled, timeoutMs: timeoutSec * 1000 };
     };
 
@@ -411,6 +467,73 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentUser]);
 
+  // Mobil ekranlarda sol menüyü kaydırarak (swipe) açıp kapatma jest desteği
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 1) return; // Çoklu dokunmaları yoksay
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.changedTouches.length === 0) return;
+      
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      
+      // Sadece mobil ve tablet boyutlarında çalışsın (lg altı)
+      if (window.innerWidth >= 1024) return;
+      
+      // Dikey hareket yatay hareketten daha baskınsa yoksay (sayfa kaydırmalarıyla çakışmasın)
+      if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+      
+      // Minimum kaydırma eşiği (60 piksel)
+      if (Math.abs(deltaX) < 60) return;
+
+      // Eğer form elemanları veya harita/slider üzerinde kaydırma yapıldıysa tetikleme
+      const activeElement = document.activeElement;
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (
+        targetTag === 'input' || 
+        targetTag === 'textarea' || 
+        targetTag === 'select' || 
+        targetTag === 'option' ||
+        (e.target as HTMLElement)?.closest('.no-swipe') ||
+        (activeElement && ['input', 'textarea'].includes(activeElement.tagName.toLowerCase()))
+      ) {
+        return;
+      }
+
+      if (deltaX > 0) {
+        // Sağa kaydırma: Eğer sol kenardan başlandıysa (ilk 100px) menüyü aç
+        if (touchStartX < 100 && !isMobileMenuOpen) {
+          setIsMobileMenuOpen(true);
+          addToast('Navigasyon Menüsü Açıldı (Jest)', 'info');
+        }
+      } else {
+        // Sola kaydırma: Eğer menü açıksa menüyü kapat
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+          addToast('Navigasyon Menüsü Kapatıldı (Jest)', 'info');
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobileMenuOpen]);
+
   const handleActiveTabChange = (tab: 'dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
     if (hasAccess(tab)) {
       setActiveTab(tab);
@@ -435,6 +558,7 @@ export default function App() {
     expenses?: Expense[];
     tasks?: Task[];
     shifts?: ShiftAssignment[];
+    activities?: CampActivity[];
   }) => {
     fetch('/api/state/sync', {
       method: 'POST',
@@ -457,6 +581,9 @@ export default function App() {
           setBungalows(data.bungalows.map((b: any) => ({ ...b, capacity: 6 })));
           setCampCenters(data.campCenters);
           setMealPlans(data.mealPlans);
+          if (data.activities) {
+            setActivities(data.activities);
+          }
           
           // Sync locally
           localStorage.setItem('kys_participants', JSON.stringify(data.participants));
@@ -467,6 +594,9 @@ export default function App() {
           localStorage.setItem('kys_bungalows', JSON.stringify(data.bungalows));
           localStorage.setItem('kys_camp_centers', JSON.stringify(data.campCenters));
           localStorage.setItem('kys_meal_plans', JSON.stringify(data.mealPlans));
+          if (data.activities) {
+            localStorage.setItem('kys_activities', JSON.stringify(data.activities));
+          }
         } else {
           loadLocalStorage();
         }
@@ -487,6 +617,7 @@ export default function App() {
       const savedExpenses = localStorage.getItem('kys_expenses');
       const savedTasks = localStorage.getItem('kys_tasks');
       const savedShifts = localStorage.getItem('kys_shifts');
+      const savedActivities = localStorage.getItem('kys_activities');
 
       if (savedParticipants) setParticipants(JSON.parse(savedParticipants));
       if (savedPeriods) setPeriods(JSON.parse(savedPeriods));
@@ -502,6 +633,7 @@ export default function App() {
       if (savedExpenses) setExpenses(JSON.parse(savedExpenses));
       if (savedTasks) setTasks(JSON.parse(savedTasks));
       if (savedShifts) setShifts(JSON.parse(savedShifts));
+      if (savedActivities) setActivities(JSON.parse(savedActivities));
     }
     
     // Auto-select tab and camp center based on URL query or hash for convenient QR scanning!
@@ -570,6 +702,12 @@ export default function App() {
     setPeriods(updated);
     localStorage.setItem('kys_periods', JSON.stringify(updated));
     syncStateWithServer({ periods: updated });
+  };
+
+  const updateActivities = (updated: CampActivity[]) => {
+    setActivities(updated);
+    localStorage.setItem('kys_activities', JSON.stringify(updated));
+    syncStateWithServer({ activities: updated });
   };
 
   const handleAddPeriod = (newPer: CampPeriod) => {
@@ -907,6 +1045,10 @@ export default function App() {
   }, [theme]);
 
   const unreadCount = notifications.filter(n => !n.read && n.roles.includes(currentUser?.role || '')).length;
+
+  if (isPublicCalendar) {
+    return <PublicCalendarView activities={activities} campCenters={campCenters} />;
+  }
 
   if (!currentUser) {
     return <LoginView onLogin={handleLogin} users={users} />;
@@ -1827,6 +1969,8 @@ export default function App() {
               onUpdatePeriods={updatePeriods}
               onAddLog={addSystemLog}
               setActiveMainTab={handleActiveTabChange}
+              activities={activities}
+              onUpdateActivities={updateActivities}
             />
           )}
 

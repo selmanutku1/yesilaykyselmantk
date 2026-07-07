@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CampCenter, CampPeriod, SystemLog } from '../types';
 import { LoginUser } from '../App';
 import { 
@@ -24,7 +24,9 @@ import {
   Shield,
   UserPlus,
   Check,
-  AlertCircle
+  AlertCircle,
+  Smartphone,
+  Download
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -104,8 +106,44 @@ export default function SettingsView({
 
   const [screensaverTimeout, setScreensaverTimeout] = useState<number>(() => {
     const saved = localStorage.getItem('kys_screensaver_timeout');
-    return saved ? parseInt(saved) : 30; // default 30 seconds
+    return saved ? parseInt(saved) : 60; // default 60 seconds (1 minute)
   });
+
+  // PWA Installation state
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           (window.navigator as any).standalone === true;
+  });
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsAppInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
 
   // Local state for camp center editing & adding
   const [editingCenterId, setEditingCenterId] = useState<string | null>(null);
@@ -357,7 +395,7 @@ export default function SettingsView({
                       max={300}
                       step={5}
                       value={screensaverTimeout}
-                      onChange={(e) => setScreensaverTimeout(parseInt(e.target.value) || 30)}
+                      onChange={(e) => setScreensaverTimeout(parseInt(e.target.value) || 60)}
                       className="w-24 accent-emerald-600 cursor-pointer"
                     />
                     <span className="text-xs font-extrabold text-emerald-900 bg-emerald-50 px-2 py-1 rounded min-w-[48px] text-center">
@@ -393,6 +431,60 @@ export default function SettingsView({
               <p className="text-3xs block">
                 <strong>Entegrasyon Notu:</strong> KVKK kapsamında tüm imha koşulları, otomatik zaman damgasıyla eşleştirilmiş olup mühür süreçleri arkaplanda simüle edilmektedir.
               </p>
+            </div>
+          </div>
+
+          {/* Mobil PWA Kurulum İstasyonu */}
+          <div className="bg-white p-5 rounded-xl border border-gray-150 dark:border-gray-700 shadow-xs space-y-4">
+            <h3 className="font-bold text-sm text-gray-900 dark:text-white pb-2 border-b flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Mobil Uygulama &amp; PWA Kurulumu
+            </h3>
+            
+            <p className="text-2xs text-gray-500 dark:text-gray-400 leading-normal font-semibold">
+              Yeşilay Kamp Yönetim Sistemi (KYS), modern bir <strong>Progressive Web App (PWA)</strong> teknolojisi ile donatılmıştır. Bu sayede uygulamayı telefonunuza, tabletinize veya bilgisayarınıza yerel bir mobil uygulama gibi yükleyebilirsiniz.
+            </p>
+
+            <div className="p-3.5 rounded-lg border border-gray-150 dark:border-gray-700 flex flex-col gap-2.5 bg-gray-50 dark:bg-gray-800/40 text-2xs font-semibold">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 dark:text-gray-400">Yükleme Durumu:</span>
+                {isAppInstalled ? (
+                  <span className="text-3xs font-extrabold px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
+                    <Check className="w-3 h-3" /> Mobil Uygulama Olarak Açık / Yüklü
+                  </span>
+                ) : deferredPrompt ? (
+                  <span className="text-3xs font-extrabold px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 rounded-full border border-amber-200 dark:border-amber-800">
+                    Kuruluma Hazır
+                  </span>
+                ) : (
+                  <span className="text-3xs font-extrabold px-2 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-750 dark:text-gray-400 rounded-full border border-gray-200 dark:border-gray-700">
+                    Tarayıcı Modunda
+                  </span>
+                )}
+              </div>
+
+              {!isAppInstalled && deferredPrompt && (
+                <button
+                  onClick={handleInstallApp}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 px-4 rounded-xl shadow-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer text-xs"
+                >
+                  <Download className="w-4 h-4" />
+                  Yeşilay KYS Uygulamasını Yükle
+                </button>
+              )}
+
+              {(!deferredPrompt && !isAppInstalled) && (
+                <div className="text-3xs text-gray-500 dark:text-gray-400 leading-relaxed bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800 space-y-2">
+                  <p className="font-extrabold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5 text-emerald-600" /> Nasıl Yüklenir?
+                  </p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li><strong>Android (Chrome):</strong> Tarayıcı adres çubuğundaki üç noktaya dokunup <strong>"Uygulamayı Yükle"</strong> veya <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
+                    <li><strong>iOS / iPhone (Safari):</strong> Alt kısımdaki <strong>"Paylaş"</strong> (<span className="font-mono">↑</span>) butonuna dokunup açılan menüden <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
+                    <li><strong>Masaüstü (Chrome/Edge):</strong> Adres çubuğunun sağ tarafındaki <strong>Yükle</strong> (monitör + ok) simgesine tıklayın.</li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
