@@ -575,7 +575,7 @@ export default function RegistrationView({
       `Toplu kayıt yükleme aracı kullanılarak '${selectedPeriod.name}' dönemine ${newAddedParticipants.length} yeni müracaatçı başarıyla eklendi.`
     );
 
-    alert(`Tebrikler! ${newAddedParticipants.length} katılımcı müracaatı başarıyla içe aktarıldı ve '${selectedPeriod.name}' dönemine müracaat kuyruğuna eklendi.`);
+    alert(`Tebrikler! ${newAddedParticipants.length} katılımcı müracaatı başarıyla içe aktarıldı ve '${selectedPeriod.name}' dönemine başvurular listesine eklendi.`);
     
     setImportedParticipants([]);
     setImportErrors([]);
@@ -1690,8 +1690,8 @@ export default function RegistrationView({
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 font-sans">
               <FileEdit className="w-5 h-5 text-emerald-600" />
-              {activeSubView === 'form' ? 'Başvuru ve Ön Kayıt Formu' : 'Müracaat Değerlendirme & İşlem Kuyruğu'}
-              <HelpTooltip content={activeSubView === 'form' ? 'Bu ekrandan kampa yeni katılacak kişilerin ön kayıt bilgilerini girebilir veya dışarıya açık başvuru linkini kopyalayabilirsiniz.' : 'Ön kayıt işlemi tamamlanmış katılımcıların evraklarını onaylayarak onları kampa kesin kayıtlı hale getirdiğiniz kuyruk ekranı.'} />
+              {activeSubView === 'form' ? 'Başvuru ve Ön Kayıt Formu' : 'Başvurular'}
+              <HelpTooltip content={activeSubView === 'form' ? 'Bu ekrandan kampa yeni katılacak kişilerin ön kayıt bilgilerini girebilir veya dışarıya açık başvuru linkini kopyalayabilirsiniz.' : 'Ön kayıt işlemi tamamlanmış katılımcıların evraklarını onaylayarak onları kampa kesin kayıtlı hale getirdiğiniz başvurular ekranı.'} />
             </h2>
             <p className="text-xs text-gray-505 mt-1 max-w-2xl">
               {activeSubView === 'form' 
@@ -1723,7 +1723,7 @@ export default function RegistrationView({
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                📋 Değerlendirme &amp; Kuyruk
+                📋 Başvurular
               </button>
             </div>
           )}
@@ -1745,7 +1745,7 @@ export default function RegistrationView({
                 </span>
               </div>
               <p className="text-[10px] text-emerald-800 leading-relaxed">
-                Bu bağlantıyı toplu katılım sağlayacak kafile liderlerine gönderebilirsiniz. Buradan yapılan tüm başvurular anında müracaat değerlendirme kuyruğuna düşecektir.
+                Bu bağlantıyı toplu katılım sağlayacak kafile liderlerine gönderebilirsiniz. Buradan yapılan tüm başvurular anında müracaat değerlendirme listesine düşecektir.
               </p>
               <div className="flex gap-2">
                 <input
@@ -1786,7 +1786,7 @@ export default function RegistrationView({
                       Toplu Katılımcı Müracaat Yükleme (Excel / CSV)
                     </h4>
                     <p className="text-[10px] text-gray-500">
-                      Önceden hazırlanmış başvuru listelerini tek tıkla müracaat değerlendirme kuyruğuna aktarın.
+                      Önceden hazırlanmış başvuru listelerini tek tıkla başvurular listesine aktarın.
                     </p>
                   </div>
                 </div>
@@ -2578,7 +2578,7 @@ export default function RegistrationView({
             <div>
               <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5 font-sans">
                 <UserCheck className="w-4 h-4 text-emerald-600" />
-                Müracaat Değerlendirme &amp; İşlem Kuyruğu
+                Başvurular
               </h3>
               <p className="text-[10px] text-gray-400 mt-0.5">
                 Online portaldan gönderilen ve yöneticinin onay/ret kararını bekleyen evrak ve başvurular.
@@ -2797,19 +2797,19 @@ export default function RegistrationView({
                                 return (
                                   <div
                                     key={app.id}
-                                    className={`p-4 rounded-xl border bg-white transition-all duration-200 ${
+                                    className={`p-3 md:p-4 rounded-xl border bg-white transition-all duration-200 ${
                                       isSelected
                                         ? 'border-emerald-400 bg-emerald-50/10 shadow-3xs'
                                         : 'border-gray-150 hover:border-gray-300 shadow-3xs'
                                     } space-y-3 text-xs`}
                                   >
-                                    <div className="flex justify-between items-start gap-2">
-                                      <div className="flex items-start gap-2">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
                                         {/* Checkbox for selection */}
                                         <button
                                           type="button"
                                           onClick={() => toggleSelectOne(app.id)}
-                                          className="mt-0.5 shrink-0 transition cursor-pointer"
+                                          className="mt-1 shrink-0 transition cursor-pointer"
                                         >
                                           {isSelected ? (
                                             <CheckSquare className="w-4 h-4 text-emerald-700" />
@@ -2818,36 +2818,36 @@ export default function RegistrationView({
                                           )}
                                         </button>
 
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                           <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-extrabold text-gray-950 text-sm">
+                                            <span className="font-extrabold text-gray-950 text-sm truncate">
                                               {app.name}
                                             </span>
-                                          </div>
-                                          <p className="text-3xs text-gray-400 font-mono mt-0.5">
-                                            T.C.: {app.identityNumber} | ID: {app.id} | Kategori:{' '}
-                                            <span className="font-extrabold text-emerald-800">
-                                              {app.category || 'Belirtilmedi'}
+                                            <span
+                                              className={`px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 uppercase tracking-wider ${
+                                                app.status === 'Yedek Listede'
+                                                  ? 'bg-purple-100 text-purple-800'
+                                                  : 'bg-yellow-100 text-yellow-850 border border-yellow-200 animate-pulse'
+                                              }`}
+                                            >
+                                              {app.status}
                                             </span>
+                                          </div>
+                                          <p className="text-3xs text-gray-400 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                            <span>T.C.: {app.identityNumber}</span>
+                                            <span className="text-gray-200 dark:text-gray-650">|</span>
+                                            <span>ID: {app.id}</span>
+                                            <span className="text-gray-200 dark:text-gray-650">|</span>
+                                            <span>Kategori: <strong className="text-emerald-800">{app.category || 'Belirtilmedi'}</strong></span>
                                           </p>
                                         </div>
                                       </div>
 
-                                      <div className="flex flex-col items-end gap-1.5">
-                                        <span
-                                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
-                                            app.status === 'Yedek Listede'
-                                              ? 'bg-purple-100 text-purple-800'
-                                              : 'bg-yellow-100 text-yellow-850 border border-yellow-200 animate-pulse'
-                                          }`}
-                                        >
-                                          {app.status}
-                                        </span>
-
+                                      <div className="flex items-center gap-1.5 self-end sm:self-center">
                                         <button
                                           type="button"
                                           onClick={toggleExpand}
-                                          className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 transition px-2 py-0.5 bg-emerald-50 rounded-lg border border-emerald-150 cursor-pointer shadow-3xs"
+                                          className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 transition px-2.5 py-1.5 bg-emerald-50 rounded-xl border border-emerald-150 cursor-pointer shadow-3xs"
                                         >
                                           {isExpanded ? (
                                             <>
@@ -2921,65 +2921,70 @@ export default function RegistrationView({
                                     )}
 
                                     {/* Actions buttons */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-gray-100">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-emerald-700 font-extrabold text-3xs flex items-center gap-0.5">
+                                    <div className="flex flex-col gap-2.5 pt-2.5 border-t border-gray-100">
+                                      {/* Document checks and downloads in single responsive row */}
+                                      <div className="flex items-center justify-between gap-2 w-full flex-wrap sm:flex-nowrap">
+                                        <span className="text-emerald-700 font-extrabold text-3xs flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
                                           <Check className="w-3.5 h-3.5" /> Evraklar Onaylı
                                         </span>
-                                        {/* Archive download buttons for this exact applicant */}
-                                        <button
-                                          onClick={() => {
-                                            exportToPdf(app);
-                                            onAddLog(
-                                              'Form İndirme',
-                                              `'${app.name}' için kayıt ve sağlık beyan formu PDF olarak yazdırıldı.`
-                                            );
-                                          }}
-                                          className="p-1 text-red-600 hover:bg-red-50 rounded border border-red-100 cursor-pointer"
-                                          title="Resmi Kayıt Formunu PDF İndir"
-                                        >
-                                          <Printer className="w-3.5 h-3.5" />
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            exportToWord(app);
-                                            onAddLog(
-                                              'Form İndirme',
-                                              `'${app.name}' için kayıt ve sağlık beyan formu Word (.doc) olarak indirildi.`
-                                            );
-                                          }}
-                                          className="p-1 text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-100 cursor-pointer"
-                                          title="Resmi Kayıt Formunu Word İndir"
-                                        >
-                                          <FileDown className="w-3.5 h-3.5" />
-                                        </button>
+                                        
+                                        <div className="flex items-center gap-1.5">
+                                          <button
+                                            onClick={() => {
+                                              exportToPdf(app);
+                                              onAddLog(
+                                                'Form İndirme',
+                                                `'${app.name}' için kayıt ve sağlık beyan formu PDF olarak yazdırıldı.`
+                                              );
+                                            }}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-100 cursor-pointer transition flex items-center justify-center gap-1 text-[10px] font-bold"
+                                            title="Resmi Kayıt Formunu PDF İndir"
+                                          >
+                                            <Printer className="w-3.5 h-3.5" /> <span className="sm:hidden">PDF</span>
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              exportToWord(app);
+                                              onAddLog(
+                                                'Form İndirme',
+                                                `'${app.name}' için kayıt ve sağlık beyan formu Word (.doc) olarak indirildi.`
+                                              );
+                                            }}
+                                            className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg border border-emerald-100 cursor-pointer transition flex items-center justify-center gap-1 text-[10px] font-bold"
+                                            title="Resmi Kayıt Formunu Word İndir"
+                                          >
+                                            <FileDown className="w-3.5 h-3.5" /> <span className="sm:hidden">Word</span>
+                                          </button>
+                                        </div>
                                       </div>
-                                      <div className="flex flex-wrap sm:flex-nowrap gap-1.5 self-stretch sm:self-end w-full sm:w-auto mt-2 sm:mt-0">
+
+                                      {/* Evaluation buttons in robust touch-friendly grid on mobile, inline row on desktop */}
+                                      <div className="grid grid-cols-2 xs:flex xs:flex-row xs:flex-wrap md:flex-nowrap gap-2 w-full mt-1">
                                         <button
                                           type="button"
                                           onClick={() => setEditingParticipant(app)}
-                                          className="flex-1 sm:flex-none justify-center p-1 px-2 border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-emerald-500 hover:text-emerald-700 font-bold rounded text-3xs flex items-center gap-1 cursor-pointer"
+                                          className="flex items-center justify-center gap-1 py-2 px-3 border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-emerald-500 hover:text-emerald-700 font-bold rounded-xl text-3xs cursor-pointer transition"
                                         >
                                           <Pencil className="w-3 h-3" /> Düzenle
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => handleStatusChange(app.id, 'Reddedildi')}
-                                          className="flex-1 sm:flex-none justify-center p-1 px-2 border border-red-200 text-red-650 hover:bg-red-50 font-bold rounded text-3xs flex items-center gap-0.5 cursor-pointer"
+                                          className="flex items-center justify-center gap-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 font-bold rounded-xl text-3xs cursor-pointer transition border border-red-200"
                                         >
                                           <X className="w-3.5 h-3.5" /> Reddet
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => handleStatusChange(app.id, 'Yedek Listede')}
-                                          className="flex-1 sm:flex-none justify-center p-1 px-2 border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold rounded text-3xs flex items-center gap-0.5 cursor-pointer"
+                                          className="flex items-center justify-center gap-1 py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl text-3xs cursor-pointer transition border border-purple-200"
                                         >
                                           Yedeğe Al
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => handleStatusChange(app.id, 'Onaylandı')}
-                                          className="flex-1 sm:flex-none justify-center p-1 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded text-3xs flex items-center gap-0.5 cursor-pointer animate-pulse"
+                                          className="col-span-2 xs:col-span-1 flex-1 flex items-center justify-center gap-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-3xs cursor-pointer transition shadow-sm animate-pulse"
                                         >
                                           <Check className="w-3.5 h-3.5" /> Onayla
                                         </button>
@@ -2997,7 +3002,7 @@ export default function RegistrationView({
                 ) : (
                   <div className="flex flex-col items-center justify-center p-12 text-center text-gray-400 border border-dashed rounded-xl">
                     <Smile className="w-12 h-12 text-gray-200 stroke-1 mb-2" />
-                    <p className="text-xs font-semibold">Tüm İşlem Kuyruğu Tamamlandı</p>
+                    <p className="text-xs font-semibold">Tüm Başvurular Değerlendirildi</p>
                     <p className="text-3xs mt-1">
                       Değerlendirilmeyi bekleyen herhangi bir ön başvuru bulunmamaktadır. Yeni başvurular geldikçe bu akışa düşecektir.
                     </p>

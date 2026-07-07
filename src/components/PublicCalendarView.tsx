@@ -132,14 +132,13 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 font-sans flex flex-col" id="public-calendar-master">
-      
-      {/* Header Banner */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-150 dark:border-gray-750 px-4 md:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-30 shadow-xs">
+         {/* Header Banner */}
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-150 dark:border-gray-750 px-4 md:px-6 py-2.5 flex justify-between items-center sticky top-0 z-30 shadow-xs">
         <div className="flex items-center gap-3">
           {/* Authentic Yeşilay Logo Component */}
-          <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl p-1 shadow-2xs select-none h-14">
-            <div className="w-11 h-11 flex items-center justify-center bg-white dark:bg-gray-700 rounded-lg">
-              <svg viewBox="0 0 100 100" className="w-9 h-9">
+          <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl p-0.5 shadow-2xs select-none h-11">
+            <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-700 rounded-lg">
+              <svg viewBox="0 0 100 100" className="w-6.5 h-6.5">
                 <path
                   d="M52,15 A35,35 0 1,0 85,68 A28,28 0 1,1 85,32 A35,35 0 0,0 52,15 Z"
                   fill="#00AB41"
@@ -147,138 +146,127 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
               </svg>
             </div>
             
-            <div className="h-9 w-[1.5px] bg-gray-300 dark:bg-gray-600 mx-2.5" />
+            <div className="h-7 w-[1px] bg-gray-300 dark:bg-gray-600 mx-2" />
             
-            <div className="pr-3 flex flex-col justify-center">
-              <span className="font-black text-[#0B3B24] dark:text-gray-100 tracking-tight text-lg leading-none">YEŞİLAY</span>
-              <span className="text-[7.5px] text-[#00AB41] font-black uppercase tracking-[0.2em] mt-1 leading-none">TÜRKİYE</span>
+            <div className="pr-2 flex flex-col justify-center">
+              <span className="font-black text-[#0B3B24] dark:text-gray-100 tracking-tight text-sm leading-none">YEŞİLAY</span>
+              <span className="text-[6.5px] text-[#00AB41] font-black uppercase tracking-[0.2em] mt-0.5 leading-none">TÜRKİYE</span>
             </div>
           </div>
 
           <div>
-            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100">Kamp Takvimi</h1>
+            <h1 className="text-base font-bold text-gray-800 dark:text-gray-100">Kamp Takvimi</h1>
           </div>
         </div>
 
         {/* Header Right Actions */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2">
           {/* Theme Selector */}
           <button
+            type="button"
             onClick={() => setIsDark(!isDark)}
-            className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+            className="p-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
             title="Temayı Değiştir"
           >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-gray-600" />}
+            {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-gray-600" />}
           </button>
         </div>
       </header>
 
       {/* Main Workspace Area */}
-      <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full space-y-6">
+      <main className="flex-1 p-3 md:p-5 max-w-[1600px] mx-auto w-full">
         
-        {/* Top filter dashboard */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-750 p-5 shadow-xs space-y-4">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-100 dark:border-gray-700 pb-4">
-            <div>
-              <h2 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-emerald-600" />
-                Günlük ve Haftalık Aktivite Planlayıcısı
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Yeşilay Kamp Merkezleri bünyesindeki tüm spor müsabakalarını, eğitimleri, seminerleri ve atölyeleri buradan canlı olarak inceleyebilirsiniz.
-              </p>
-            </div>
-
-            {/* Camp Center Selector */}
-            <div className="flex items-center gap-2 bg-emerald-50/50 dark:bg-gray-700/50 p-1.5 border border-emerald-100 dark:border-gray-700 rounded-xl w-full lg:w-auto">
-              <Building2 className="w-4 h-4 text-emerald-700 dark:text-emerald-300 shrink-0 ml-1" />
-              <span className="text-[10px] font-black text-emerald-900 dark:text-emerald-100 uppercase shrink-0">Kamp Merkezi Filtresi:</span>
-              <select
-                value={selectedCampCenterId}
-                onChange={(e) => setSelectedCampCenterId(e.target.value)}
-                className="bg-transparent text-xs font-bold text-emerald-950 dark:text-white focus:outline-none cursor-pointer pr-2 flex-grow min-w-0"
-              >
-                {campCenters.map((cc) => (
-                  <option key={cc.id} value={cc.id}>
-                    {cc.name} ({cc.city})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Activity Filters: Search */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-            {/* Search input */}
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Aktivite adı, salon, konum veya sorumlu ara..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Calendar Body */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-750 p-5 shadow-xs space-y-4">
+        {/* Unified Calendar Container */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-750 p-4 md:p-5 shadow-xs space-y-4">
           
-          {/* Calendar Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50 dark:bg-gray-900/50 p-3.5 rounded-xl border border-gray-100 dark:border-gray-750">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleTodayCalendar}
-                className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 transition cursor-pointer"
-              >
-                Bugün
-              </button>
-              <div className="flex items-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-3xs">
-                <button
-                  type="button"
-                  onClick={handlePrevCalendar}
-                  className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 border-r border-gray-200 dark:border-gray-700 transition text-gray-600 dark:text-gray-350 cursor-pointer"
-                  title="Önceki"
+          {/* Sleek Integrated Control Bar */}
+          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
+            {/* Left Section: Center Selector & Search */}
+            <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center flex-1 max-w-4xl">
+              {/* Camp Center Selector */}
+              <div className="flex items-center gap-1.5 bg-emerald-50/60 dark:bg-gray-700/65 px-2.5 py-1.5 border border-emerald-100 dark:border-gray-600 rounded-xl shrink-0">
+                <Building2 className="w-4 h-4 text-emerald-700 dark:text-emerald-300 shrink-0" />
+                <select
+                  value={selectedCampCenterId}
+                  onChange={(e) => setSelectedCampCenterId(e.target.value)}
+                  className="bg-transparent text-xs font-extrabold text-emerald-950 dark:text-white focus:outline-none cursor-pointer pr-1"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextCalendar}
-                  className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-350 cursor-pointer"
-                  title="Sonraki"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                  {campCenters.map((cc) => (
+                    <option key={cc.id} value={cc.id} className="dark:bg-gray-800 dark:text-white font-bold text-xs">
+                      {cc.name} ({cc.city})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <span className="text-xs font-extrabold text-gray-800 dark:text-gray-100 min-w-[130px] ml-1">
-                {getCalendarTitleText()}
-              </span>
+
+              {/* Search Box */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Aktivite adı, salon, konum veya sorumlu ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
             </div>
 
-            {/* View Selector Tabs */}
-            <div className="flex bg-gray-200/60 dark:bg-gray-900 p-0.5 rounded-lg border border-gray-200/30 dark:border-gray-700 self-start sm:self-auto">
-              {(['month', 'week', 'day', 'agenda'] as const).map((view) => {
-                const label = view === 'month' ? 'Aylık' : view === 'week' ? 'Haftalık' : view === 'day' ? 'Günlük' : 'Ajanda';
-                const active = calendarViewMode === view;
-                return (
+            {/* Right Section: Navigation Controls & View mode */}
+            <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center shrink-0">
+              {/* Date Navigation group */}
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/40 p-1 rounded-xl border border-gray-150 dark:border-gray-750">
+                <button
+                  type="button"
+                  onClick={handleTodayCalendar}
+                  className="px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg text-[10px] font-bold text-gray-700 dark:text-gray-300 transition cursor-pointer"
+                >
+                  Bugün
+                </button>
+                <div className="flex items-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
                   <button
-                    key={view}
                     type="button"
-                    onClick={() => setCalendarViewMode(view)}
-                    className={`px-3.5 py-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
-                      active
-                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs'
-                        : 'text-gray-500 hover:text-gray-850 dark:hover:text-gray-200'
-                    }`}
+                    onClick={handlePrevCalendar}
+                    className="p-1 hover:bg-gray-50 dark:hover:bg-gray-700 border-r border-gray-200 dark:border-gray-700 transition text-gray-600 dark:text-gray-350 cursor-pointer"
+                    title="Önceki"
                   >
-                    {label}
+                    <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={handleNextCalendar}
+                    className="p-1 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-350 cursor-pointer"
+                    title="Sonraki"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-[11px] font-extrabold text-gray-800 dark:text-gray-100 px-1 text-center min-w-[100px]">
+                  {getCalendarTitleText()}
+                </span>
+              </div>
+
+              {/* View mode tabs */}
+              <div className="flex bg-gray-100 dark:bg-gray-900 p-0.5 rounded-xl border border-gray-200/50 dark:border-gray-700 shrink-0">
+                {(['month', 'week', 'day', 'agenda'] as const).map((view) => {
+                  const label = view === 'month' ? 'Aylık' : view === 'week' ? 'Haftalık' : view === 'day' ? 'Günlük' : 'Ajanda';
+                  const active = calendarViewMode === view;
+                  return (
+                    <button
+                      key={view}
+                      type="button"
+                      onClick={() => setCalendarViewMode(view)}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-black transition cursor-pointer ${
+                        active
+                          ? 'bg-white dark:bg-gray-800 text-emerald-800 dark:text-emerald-400 shadow-xs'
+                          : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -335,18 +323,17 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                         return (
                           <div
                             key={index}
-                            className={`min-h-[110px] p-2 flex flex-col justify-between group hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition relative ${
+                            onClick={() => {
+                              setCalendarReferenceDate(d);
+                              setCalendarViewMode('day');
+                            }}
+                            className={`min-h-[56px] sm:min-h-[110px] p-1 sm:p-2 flex flex-col justify-between group hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition relative cursor-pointer ${
                               isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/30 dark:bg-gray-900/20'
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCalendarReferenceDate(d);
-                                  setCalendarViewMode('day');
-                                }}
-                                className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold cursor-pointer hover:bg-gray-150 dark:hover:bg-gray-700 transition ${
+                              <span
+                                className={`w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-[9px] sm:text-[10px] font-bold transition ${
                                   isToday
                                     ? 'bg-blue-600 text-white'
                                     : isSelected
@@ -357,11 +344,11 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                                 }`}
                               >
                                 {d.getDate()}
-                              </button>
+                              </span>
                             </div>
 
-                            {/* Daily Activities Stack */}
-                            <div className="flex-1 mt-1.5 space-y-0.5 overflow-y-auto max-h-[64px] scrollbar-none">
+                            {/* Daily Activities Stack (Desktop) */}
+                            <div className="hidden sm:block flex-1 mt-1.5 space-y-0.5 overflow-y-auto max-h-[64px] scrollbar-none">
                               {dateAct.slice(0, 3).map((act) => {
                                 const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                                 let pClass = 'bg-gray-50 text-gray-700 border-gray-100 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800';
@@ -374,7 +361,10 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                                 return (
                                   <div
                                     key={act.id}
-                                    onClick={() => setSelectedDetailedEvent(act)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedDetailedEvent(act);
+                                    }}
                                     className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded border leading-tight truncate flex items-center justify-between gap-1 transition cursor-pointer hover:shadow-2xs ${pClass}`}
                                     title={`${actTime} - ${act.title}`}
                                   >
@@ -388,6 +378,19 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                                 <div className="text-[7.5px] text-gray-400 dark:text-gray-500 font-extrabold text-center">+{dateAct.length - 3} etkinlik</div>
                               )}
                             </div>
+
+                            {/* Color-coded indicator dots (Mobile) */}
+                            <div className="flex sm:hidden justify-center gap-0.5 mt-1 flex-wrap">
+                              {dateAct.slice(0, 4).map((act) => {
+                                let dotColor = 'bg-gray-400 dark:bg-gray-500';
+                                if (act.type === 'Spor') dotColor = 'bg-sky-500';
+                                else if (act.type === 'Atölye') dotColor = 'bg-amber-500';
+                                else if (act.type === 'Eğitim') dotColor = 'bg-emerald-500';
+                                else if (act.type === 'Seminer') dotColor = 'bg-purple-500';
+                                else if (act.type === 'Eğlence') dotColor = 'bg-pink-500';
+                                return <span key={act.id} className={`w-1 h-1 rounded-full shrink-0 ${dotColor}`} />;
+                              })}
+                            </div>
                           </div>
                         );
                       })}
@@ -396,22 +399,22 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                 )}
 
                 {calendarViewMode === 'week' && (
-                  <div className="grid grid-cols-7 divide-x divide-gray-150 dark:divide-gray-750 bg-white dark:bg-gray-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-7 divide-y sm:divide-y-0 sm:divide-x divide-gray-150 dark:divide-gray-750 bg-white dark:bg-gray-800">
                     {weekGridDates.map((wDate, wIndex) => {
                       const isToday = wDate.toDateString() === new Date().toDateString();
                       const dateAct = getActivitiesForDate(wDate);
                       const dayLabel = wDate.toLocaleDateString('tr-TR', { weekday: 'short' });
 
                       return (
-                        <div key={wIndex} className="min-h-[280px] p-2 hover:bg-gray-50/40 dark:hover:bg-gray-700/20 transition">
-                          <div className="border-b dark:border-gray-700 pb-2 mb-2.5 text-center">
+                        <div key={wIndex} className="min-h-fit sm:min-h-[280px] p-3 sm:p-2 hover:bg-gray-50/40 dark:hover:bg-gray-700/20 transition">
+                          <div className="border-b dark:border-gray-700 pb-2 mb-2 flex sm:flex-col justify-between sm:justify-center items-center gap-2">
                             <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide block">{dayLabel}</span>
-                            <span className={`w-7 h-7 inline-flex items-center justify-center rounded-full text-xs font-black mt-1 ${isToday ? 'bg-blue-600 text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                            <span className={`w-7 h-7 inline-flex items-center justify-center rounded-full text-xs font-black sm:mt-1 ${isToday ? 'bg-blue-600 text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                               {wDate.getDate()}
                             </span>
                           </div>
 
-                          <div className="space-y-1.5 overflow-y-auto max-h-[210px] scrollbar-thin">
+                          <div className="space-y-1.5 overflow-y-auto max-h-[160px] sm:max-h-[210px] scrollbar-thin">
                             {dateAct.map((act) => {
                               const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                               let badgeC = 'bg-gray-50 border-gray-150 text-gray-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-350';
@@ -425,7 +428,7 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                                 <div
                                   key={act.id}
                                   onClick={() => setSelectedDetailedEvent(act)}
-                                  className={`p-2 rounded-lg border text-3xs font-black leading-tight cursor-pointer transition hover:shadow-xs text-left ${badgeC}`}
+                                  className={`p-2.5 sm:p-2 rounded-lg border text-3xs font-black leading-tight cursor-pointer transition hover:shadow-xs text-left ${badgeC}`}
                                 >
                                   <p className="opacity-75">{actTime}</p>
                                   <h5 className="font-bold truncate mt-0.5">{act.title}</h5>
@@ -433,7 +436,7 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                               );
                             })}
                             {dateAct.length === 0 && (
-                              <div className="text-[9px] text-gray-350 dark:text-gray-650 italic text-center py-8">Etkinlik yok</div>
+                              <div className="text-[9px] text-gray-350 dark:text-gray-650 italic text-center py-4 sm:py-8">Etkinlik yok</div>
                             )}
                           </div>
                         </div>

@@ -302,6 +302,60 @@ export default function App() {
     localStorage.setItem('kys_users', JSON.stringify(users));
   }, [users]);
 
+  // Automatically sync planned & active camp periods into the camp activities (takvim)
+  useEffect(() => {
+    const nonPeriodActivities = activities.filter(act => !act.id.startsWith('period-'));
+    
+    const periodActivities: CampActivity[] = [];
+    periods.forEach(period => {
+      // Create Start Event
+      periodActivities.push({
+        id: `period-start-${period.id}`,
+        campCenterId: period.campCenterId,
+        title: `🏁 Kamp Başlangıcı: ${period.name}`,
+        type: 'Eğitim',
+        dateTime: `${period.startDate}T09:00:00`,
+        instructorId: 'Kamp Koordinasyonu',
+        location: 'Kayıt ve Kabul Alanı'
+      });
+      
+      // Create End Event
+      periodActivities.push({
+        id: `period-end-${period.id}`,
+        campCenterId: period.campCenterId,
+        title: `⛺ Kamp Bitişi: ${period.name}`,
+        type: 'Eğitim',
+        dateTime: `${period.endDate}T17:00:00`,
+        instructorId: 'Kamp Koordinasyonu',
+        location: 'Tüm Kamp Alanı'
+      });
+    });
+
+    const currentPeriodActIds = activities.filter(act => act.id.startsWith('period-')).map(act => act.id).sort();
+    const newPeriodActIds = periodActivities.map(act => act.id).sort();
+    
+    let hasChanged = currentPeriodActIds.length !== newPeriodActIds.length;
+    if (!hasChanged) {
+      for (let i = 0; i < periodActivities.length; i++) {
+        const matching = activities.find(act => act.id === periodActivities[i].id);
+        if (!matching || 
+            matching.title !== periodActivities[i].title || 
+            matching.dateTime !== periodActivities[i].dateTime || 
+            matching.campCenterId !== periodActivities[i].campCenterId) {
+          hasChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (hasChanged) {
+      const mergedActivities = [...nonPeriodActivities, ...periodActivities];
+      setActivities(mergedActivities);
+      localStorage.setItem('kys_activities', JSON.stringify(mergedActivities));
+      syncStateWithServer({ activities: mergedActivities });
+    }
+  }, [periods, activities]);
+
   // UI state
   type ThemeMode = 'light' | 'dark' | 'system';
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -1101,18 +1155,18 @@ export default function App() {
           </button>
         </div>
 
-        <div className="flex items-center gap-4 w-full md:w-auto min-w-0">
+        <div className="flex items-center justify-between md:justify-start gap-2 md:gap-4 w-full md:w-auto min-w-0">
           {/* Multi-Tenant SaaS Camp Center Switcher */}
-          <div className="flex items-center gap-2 bg-emerald-50/50 dark:bg-gray-700 p-1.5 border border-emerald-100 dark:border-gray-600 rounded-lg flex-1 md:flex-none">
+          <div className="flex items-center gap-1.5 md:gap-2 bg-emerald-50/50 dark:bg-gray-700 p-1.5 border border-emerald-100 dark:border-gray-600 rounded-lg flex-1 max-w-[145px] xs:max-w-[185px] sm:max-w-xs md:max-w-none md:flex-none">
             <Building2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 ml-1" />
-            <span className="text-3xs font-extrabold text-emerald-900 dark:text-emerald-100 uppercase shrink-0">Kamp Merkezi:</span>
+            <span className="text-3xs font-extrabold text-emerald-900 dark:text-emerald-100 uppercase shrink-0 hidden xs:inline">Kamp Merkezi:</span>
             <select
               value={selectedCenterId}
               onChange={(e) => {
                 setSelectedCenterId(e.target.value);
                 addSystemLog('Camp Center Switch', `SaaS seçici ile '${campCenters.find(c=>c.id===e.target.value)?.name}' merkezine geçildi.`);
               }}
-              className="bg-transparent text-xs font-bold text-emerald-950 dark:text-white focus:outline-none cursor-pointer pr-2 flex-grow min-w-0 truncate max-w-[170px] xs:max-w-[230px] sm:max-w-sm md:max-w-none"
+              className="bg-transparent text-xs font-bold text-emerald-950 dark:text-white focus:outline-none cursor-pointer pr-2 flex-grow min-w-0 truncate"
             >
               {campCenters.map((cc) => (
                 <option key={cc.id} value={cc.id}>
@@ -1123,11 +1177,11 @@ export default function App() {
           </div>
 
           {/* Action Icons & User Profile */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
             {/* Tekli Gece / Gündüz Modu Butonu */}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition flex items-center justify-center cursor-pointer border border-gray-200/50 dark:border-gray-700"
+              className="p-1.5 md:p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition flex items-center justify-center cursor-pointer border border-gray-200/50 dark:border-gray-700"
               title={theme === 'dark' ? "Aydınlık Moda Geç (Gündüz)" : "Karanlık Moda Geç (Gece)"}
             >
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-gray-500" />}
@@ -1136,7 +1190,7 @@ export default function App() {
             {/* Tam Ekran Modu Butonu */}
             <button
               onClick={toggleFullscreen}
-              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition flex items-center justify-center cursor-pointer border border-gray-200/50 dark:border-gray-700"
+              className="p-1.5 md:p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition flex items-center justify-center cursor-pointer border border-gray-200/50 dark:border-gray-700"
               title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Maximize2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
@@ -1145,14 +1199,14 @@ export default function App() {
             <div className="relative">
               <button
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition relative focus:outline-none cursor-pointer"
+                className="p-1.5 md:p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition relative focus:outline-none cursor-pointer"
                 title="Bildirimler"
               >
                 <Bell className={`w-4 h-4 ${unreadCount > 0 ? 'animate-bounce text-emerald-600 dark:text-emerald-400' : ''}`} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                  <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                   </span>
                 )}
               </button>
@@ -1465,10 +1519,10 @@ export default function App() {
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
             {/* User Profile & Logout */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 md:gap-3">
               <button
                 onClick={() => setIsProfileModalOpen(true)}
-                className="group flex items-center gap-3 text-left hover:opacity-95 transition cursor-pointer bg-transparent border-none p-0 outline-none"
+                className="group flex items-center gap-2 md:gap-3 text-left hover:opacity-95 transition cursor-pointer bg-transparent border-none p-0 outline-none"
                 title="Profilimi Düzenle"
               >
                 <div className="hidden md:block text-right">
@@ -1479,20 +1533,20 @@ export default function App() {
                     {currentUser?.roleName}
                   </span>
                 </div>
-                <div className={`w-9 h-9 rounded-full ${localStorage.getItem('kys_profile_color_' + currentUser?.id) || 'bg-emerald-600'} text-white flex items-center justify-center font-black text-xs shadow-3xs shrink-0 uppercase border-2 border-emerald-100 dark:border-emerald-900 transition-all duration-300 group-hover:scale-105`}>
+                <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full ${localStorage.getItem('kys_profile_color_' + currentUser?.id) || 'bg-emerald-600'} text-white flex items-center justify-center font-black text-xs shadow-3xs shrink-0 uppercase border-2 border-emerald-100 dark:border-emerald-900 transition-all duration-300 group-hover:scale-105`}>
                   {currentUser?.name ? currentUser.name.trim().split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'PP'}
                 </div>
               </button>
               <button
                 onClick={() => setIsIdle(true)}
-                className="p-2 ml-1 flex items-center text-amber-700 dark:text-amber-400 hover:text-white hover:bg-amber-600 border border-amber-200/60 dark:border-amber-900/60 hover:border-amber-600 rounded-xl transition-all duration-150 cursor-pointer"
+                className="p-1.5 md:p-2 ml-0.5 flex items-center text-amber-700 dark:text-amber-400 hover:text-white hover:bg-amber-600 border border-amber-200/60 dark:border-amber-900/60 hover:border-amber-600 rounded-xl transition-all duration-150 cursor-pointer"
                 title="Ekranı Güvenli Moda Kilitle"
               >
                 <Lock className="w-4 h-4 shrink-0" />
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 ml-1 flex items-center text-rose-700 dark:text-rose-400 hover:text-white hover:bg-rose-600 border border-rose-200/60 dark:border-rose-900/60 hover:border-rose-600 rounded-xl transition-all duration-150 cursor-pointer"
+                className="p-1.5 md:p-2 ml-0.5 flex items-center text-rose-700 dark:text-rose-400 hover:text-white hover:bg-rose-600 border border-rose-200/60 dark:border-rose-900/60 hover:border-rose-600 rounded-xl transition-all duration-150 cursor-pointer"
                 title="Sistemden Güvenli Çıkış"
               >
                 <LogOut className="w-4 h-4 shrink-0" />
@@ -1520,6 +1574,84 @@ export default function App() {
               {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>
           </div>
+
+          {/* Mobile Quick Action Buttons Panel */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden bg-slate-50/50 dark:bg-gray-700/30 p-3.5 rounded-2xl border border-gray-150 dark:border-gray-700 mb-4 space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                <Settings className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-[10px] font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hızlı Sistem Kontrolleri</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-gray-500" />}
+                  <span className="text-[9px] font-bold">Tema</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
+                >
+                  {isFullscreen ? <Minimize2 className="w-4 h-4 text-emerald-600" /> : <Maximize2 className="w-4 h-4 text-gray-500" />}
+                  <span className="text-[9px] font-bold">Tam Ekran</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNotifOpen(!isNotifOpen);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer relative"
+                >
+                  <Bell className="w-4 h-4 text-gray-500" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                  )}
+                  <span className="text-[9px] font-bold">Bildirim ({unreadCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsIdle(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-amber-100 dark:border-amber-900/40 flex flex-col items-center justify-center gap-1 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition cursor-pointer"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span className="text-[9px] font-bold">Güvenli Mod</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-emerald-100 dark:border-emerald-900/40 flex flex-col items-center justify-center gap-1 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition cursor-pointer"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="text-[9px] font-bold">Profil</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-rose-100 dark:border-rose-900/40 flex flex-col items-center justify-center gap-1 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-[9px] font-bold">Çıkış Yap</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {hasAccess('dashboard') && (
             <button
@@ -1630,7 +1762,7 @@ export default function App() {
                 }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${registrationSubTab === 'queue' ? 'bg-emerald-600' : 'bg-gray-300'}`} />
-                Müracaat Değerlendirme
+                Başvurular
               </button>
             </div>
           )}

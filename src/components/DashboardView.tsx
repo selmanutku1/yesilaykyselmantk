@@ -1697,9 +1697,9 @@ export default function DashboardView({
                   {calendarViewMode === 'month' && (
                     <div className="space-y-1 bg-white border border-gray-150 rounded-xl overflow-hidden shadow-2xs">
                       {/* Weekday titles */}
-                      <div className="grid grid-cols-7 border-b border-gray-150 bg-gray-50 text-center text-gray-500 text-[10px] font-extrabold py-2 uppercase tracking-wider">
+                      <div className="grid grid-cols-7 border-b border-gray-150 bg-gray-50 text-center text-gray-500 text-[10px] font-extrabold py-2.5 uppercase tracking-wider">
                         {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((day) => (
-                          <div key={day}>{day}</div>
+                          <div key={day} className="font-extrabold text-gray-500 tracking-widest">{day}</div>
                         ))}
                       </div>
                       {/* 42 grid dates */}
@@ -1713,33 +1713,35 @@ export default function DashboardView({
                           return (
                             <div
                               key={idx}
-                              className={`min-h-[88px] bg-white p-1 flex flex-col justify-between transition group hover:bg-gray-50/70`}
+                              onClick={() => {
+                                setCalendarReferenceDate(d);
+                                setCalendarViewMode('day');
+                              }}
+                              className={`min-h-[50px] sm:min-h-[88px] bg-white p-1 flex flex-col justify-between transition group hover:bg-gray-50/70 cursor-pointer ${
+                                isCurrentMonth ? 'bg-white' : 'bg-gray-50/40 text-gray-400'
+                              }`}
                             >
                               {/* Day Cell Header */}
                               <div className="flex items-center justify-between">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setCalendarReferenceDate(d);
-                                    setCalendarViewMode('day');
-                                  }}
-                                  className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold cursor-pointer hover:bg-gray-150 transition ${
+                                <span
+                                  className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black transition ${
                                     isToday
-                                      ? 'bg-blue-600 text-white'
+                                      ? 'bg-blue-600 text-white shadow-xs'
                                       : isSelected
-                                      ? 'bg-emerald-600 text-white'
+                                      ? 'bg-emerald-600 text-white shadow-xs'
                                       : isCurrentMonth
-                                      ? 'text-gray-800'
+                                      ? 'text-gray-850 hover:bg-gray-100'
                                       : 'text-gray-350'
                                   }`}
                                 >
                                   {d.getDate()}
-                                </button>
+                                </span>
                                 
                                 {/* Add activity shortcut inside grid */}
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     const yyyy = d.getFullYear();
                                     const mm = String(d.getMonth() + 1).padStart(2, '0');
                                     const dd = String(d.getDate()).padStart(2, '0');
@@ -1753,26 +1755,29 @@ export default function DashboardView({
                                 </button>
                               </div>
 
-                              {/* Activities list in day */}
-                              <div className="flex-1 mt-1 space-y-0.5 overflow-y-auto max-h-[54px] scrollbar-thin pr-0.5">
+                              {/* Activities list in day (Desktop) */}
+                              <div className="hidden sm:block flex-1 mt-1 space-y-0.5 overflow-y-auto max-h-[54px] scrollbar-thin pr-0.5">
                                 {dateAct.slice(0, 3).map((act) => {
                                   const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                                  let pClass = 'bg-gray-50 text-gray-700 border-gray-100';
-                                  if (act.type === 'Spor') pClass = 'bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100';
-                                  else if (act.type === 'Atölye') pClass = 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100';
-                                  else if (act.type === 'Eğitim') pClass = 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100';
-                                  else if (act.type === 'Seminer') pClass = 'bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100';
-                                  else if (act.type === 'Eğlence') pClass = 'bg-pink-50 text-pink-700 border-pink-100 hover:bg-pink-100';
+                                  let pClass = 'bg-gray-50 text-gray-700 border-gray-100 border-l-gray-400';
+                                  if (act.type === 'Spor') pClass = 'bg-sky-50/80 text-sky-800 border-sky-100 border-l-sky-500 hover:bg-sky-100/70';
+                                  else if (act.type === 'Atölye') pClass = 'bg-amber-50/80 text-amber-850 border-amber-100 border-l-amber-500 hover:bg-amber-100/70';
+                                  else if (act.type === 'Eğitim') pClass = 'bg-emerald-50/80 text-emerald-800 border-emerald-100 border-l-emerald-500 hover:bg-emerald-100/70';
+                                  else if (act.type === 'Seminer') pClass = 'bg-purple-50/80 text-purple-800 border-purple-100 border-l-purple-500 hover:bg-purple-100/70';
+                                  else if (act.type === 'Eğlence') pClass = 'bg-pink-50/80 text-pink-800 border-pink-100 border-l-pink-500 hover:bg-pink-100/70';
 
                                   return (
                                     <div
                                       key={act.id}
-                                      onClick={() => setSelectedDetailedEvent(act)}
-                                      className={`text-[8px] font-bold px-1.5 py-0.5 rounded border leading-tight truncate flex items-center justify-between gap-1 transition cursor-pointer hover:shadow-xs ${pClass}`}
-                                      title={`${actTime} - ${act.title}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDetailedEvent(act);
+                                      }}
+                                      className={`text-[8px] font-bold px-1 py-0.5 rounded border-t border-r border-b border-l-2 leading-tight truncate flex items-center justify-between gap-1 transition cursor-pointer hover:shadow-xs ${pClass}`}
+                                      title={`${actTime} [${act.type}] - ${act.title}`}
                                     >
                                       <span className="truncate flex-1 text-left">
-                                        {actTime} {act.title}
+                                        <span className="opacity-75 mr-0.5 font-normal">{actTime}</span> {act.title}
                                       </span>
                                       <button
                                         type="button"
@@ -1790,15 +1795,29 @@ export default function DashboardView({
                                 {dateAct.length > 3 && (
                                   <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       setCalendarReferenceDate(d);
                                       setCalendarViewMode('day');
                                     }}
-                                    className="w-full text-center text-[7px] font-extrabold text-gray-400 hover:text-gray-600 block transition py-0.5"
+                                    className="w-full text-center text-[7px] font-black text-gray-500 hover:text-gray-800 hover:bg-gray-100/50 block rounded transition py-0.5"
                                   >
                                     + {dateAct.length - 3} Aktivite Daha
                                   </button>
                                 )}
+                              </div>
+
+                              {/* Color-coded indicator dots (Mobile) */}
+                              <div className="flex sm:hidden justify-center gap-0.5 mt-1 flex-wrap">
+                                {dateAct.slice(0, 4).map((act) => {
+                                  let dotColor = 'bg-gray-400';
+                                  if (act.type === 'Spor') dotColor = 'bg-sky-500';
+                                  else if (act.type === 'Atölye') dotColor = 'bg-amber-500';
+                                  else if (act.type === 'Eğitim') dotColor = 'bg-emerald-500';
+                                  else if (act.type === 'Seminer') dotColor = 'bg-purple-500';
+                                  else if (act.type === 'Eğlence') dotColor = 'bg-pink-500';
+                                  return <span key={act.id} className={`w-1 h-1 rounded-full shrink-0 ${dotColor}`} />;
+                                })}
                               </div>
                             </div>
                           );
@@ -1809,7 +1828,7 @@ export default function DashboardView({
 
                   {/* Haftalık (Week) View */}
                   {calendarViewMode === 'week' && (
-                    <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3">
                       {weekGridDates.map((d, idx) => {
                         const dateAct = getActivitiesForDate(d);
                         const isToday = d.toDateString() === new Date().toDateString();
@@ -1822,19 +1841,27 @@ export default function DashboardView({
                         return (
                           <div
                             key={idx}
-                            className={`p-2 bg-gray-50/40 rounded-xl border transition flex flex-col justify-between ${
+                            className={`p-3 bg-gray-50/40 rounded-xl border transition flex flex-col justify-between ${
                               isToday
-                                ? 'border-blue-200 bg-blue-50/5'
+                                ? 'border-blue-400 bg-blue-50/10 shadow-xs'
                                 : isSelected
-                                ? 'border-emerald-200 bg-emerald-50/5'
-                                : 'border-gray-100 hover:border-gray-200 bg-white shadow-3xs'
+                                ? 'border-emerald-400 bg-emerald-50/10 shadow-xs'
+                                : 'border-gray-150 hover:border-gray-250 bg-white shadow-2xs'
                             }`}
                           >
                             {/* Column Header */}
-                            <div className="border-b pb-1.5 mb-2 flex items-center justify-between text-left">
+                            <div className="border-b border-gray-150 pb-2 mb-2.5 flex items-center justify-between text-left">
                               <div>
-                                <p className={`text-[10px] font-extrabold ${isToday ? 'text-blue-600' : 'text-gray-400'}`}>{weekdayName}</p>
-                                <p className={`text-base font-extrabold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{dateNum}</p>
+                                <p className={`text-[9px] font-black uppercase tracking-wider ${isToday ? 'text-blue-600' : 'text-gray-400'}`}>{weekdayName}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className={`text-base font-black ${isToday ? 'text-blue-600' : 'text-gray-850'}`}>{dateNum}</p>
+                                  {isToday && (
+                                    <span className="bg-blue-600 text-white text-[7px] font-extrabold px-1 py-0.5 rounded uppercase tracking-widest leading-none scale-90 origin-left">Bugün</span>
+                                  )}
+                                  {isSelected && !isToday && (
+                                    <span className="bg-emerald-600 text-white text-[7px] font-extrabold px-1 py-0.5 rounded uppercase tracking-widest leading-none scale-90 origin-left">Seçili</span>
+                                  )}
+                                </div>
                               </div>
                               <button
                                 type="button"
@@ -1853,30 +1880,52 @@ export default function DashboardView({
                             </div>
 
                             {/* Column Activities List */}
-                            <div className="space-y-1.5 flex-1 min-h-[220px] max-h-[300px] overflow-y-auto scrollbar-thin pr-0.5">
+                            <div className="space-y-2 flex-1 min-h-fit sm:min-h-[220px] max-h-[300px] overflow-y-auto scrollbar-thin pr-0.5">
                               {dateAct.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center text-center py-10 text-gray-350">
+                                <div className="h-full flex flex-col items-center justify-center text-center py-6 sm:py-10 text-gray-350">
                                   <Clock className="w-4 h-4 mb-1 opacity-50 text-gray-300 mx-auto" />
                                   <span className="text-[9px] font-semibold text-gray-400">Boş Gün</span>
                                 </div>
                               ) : (
                                 dateAct.map((act) => {
                                   const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                                  let badgeClass = 'bg-gray-50 border-gray-100 text-gray-600';
-                                  if (act.type === 'Spor') badgeClass = 'bg-sky-50 border-sky-100 text-sky-700';
-                                  else if (act.type === 'Atölye') badgeClass = 'bg-amber-50 border-amber-100 text-amber-700';
-                                  else if (act.type === 'Eğitim') badgeClass = 'bg-emerald-50 border-emerald-100 text-emerald-700';
-                                  else if (act.type === 'Seminer') badgeClass = 'bg-purple-50 border-purple-100 text-purple-700';
-                                  else if (act.type === 'Eğlence') badgeClass = 'bg-pink-50 border-pink-100 text-pink-700';
+                                  
+                                  let leftBorderColor = 'border-l-gray-450';
+                                  let badgeColors = 'bg-gray-100 text-gray-700 border-gray-250';
+                                  let containerBg = 'bg-gray-50/50 hover:bg-gray-50 border-gray-150';
+                                  
+                                  if (act.type === 'Spor') {
+                                    leftBorderColor = 'border-l-sky-500';
+                                    badgeColors = 'bg-sky-100/90 text-sky-800 border-sky-200';
+                                    containerBg = 'bg-sky-50/60 hover:bg-sky-50 border-sky-100';
+                                  } else if (act.type === 'Atölye') {
+                                    leftBorderColor = 'border-l-amber-500';
+                                    badgeColors = 'bg-amber-100/90 text-amber-850 border-amber-200';
+                                    containerBg = 'bg-amber-50/60 hover:bg-amber-50 border-amber-100';
+                                  } else if (act.type === 'Eğitim') {
+                                    leftBorderColor = 'border-l-emerald-500';
+                                    badgeColors = 'bg-emerald-100/90 text-emerald-800 border-emerald-200';
+                                    containerBg = 'bg-emerald-50/60 hover:bg-emerald-50 border-emerald-100';
+                                  } else if (act.type === 'Seminer') {
+                                    leftBorderColor = 'border-l-purple-500';
+                                    badgeColors = 'bg-purple-100/90 text-purple-800 border-purple-200';
+                                    containerBg = 'bg-purple-50/60 hover:bg-purple-50 border-purple-100';
+                                  } else if (act.type === 'Eğlence') {
+                                    leftBorderColor = 'border-l-pink-500';
+                                    badgeColors = 'bg-pink-100/90 text-pink-850 border-pink-200';
+                                    containerBg = 'bg-pink-50/60 hover:bg-pink-50 border-pink-100';
+                                  }
 
                                   return (
                                     <div
                                       key={act.id}
                                       onClick={() => setSelectedDetailedEvent(act)}
-                                      className={`p-2 rounded-lg border text-left transition relative group hover:shadow-xs cursor-pointer ${badgeClass}`}
+                                      className={`p-2 rounded-lg border-t border-r border-b border-l-3 text-left transition relative group hover:shadow-xs cursor-pointer ${leftBorderColor} ${containerBg}`}
                                     >
                                       <div className="flex justify-between items-start gap-1">
-                                        <span className="text-[8px] font-extrabold tracking-wider uppercase opacity-85">{act.type}</span>
+                                        <span className={`text-[7px] font-black tracking-wider uppercase px-1 py-0.5 rounded border ${badgeColors}`}>
+                                          {act.type}
+                                        </span>
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -1889,9 +1938,11 @@ export default function DashboardView({
                                           &times;
                                         </button>
                                       </div>
-                                      <h5 className="text-[10px] font-bold text-gray-800 leading-snug line-clamp-2 mt-0.5">{act.title}</h5>
-                                      <div className="mt-1 flex items-center justify-between text-[8px] text-gray-450 font-semibold">
-                                        <span>{actTime}</span>
+                                      <h5 className="text-[10px] font-bold text-gray-800 leading-snug line-clamp-2 mt-1">{act.title}</h5>
+                                      <div className="mt-1 flex items-center justify-between text-[8px] text-gray-450 font-bold">
+                                        <span className="flex items-center gap-0.5">
+                                          <Clock className="w-2.5 h-2.5 text-gray-400" /> {actTime}
+                                        </span>
                                         <span className="truncate max-w-[45px] text-right" title={act.location}>{act.location}</span>
                                       </div>
                                     </div>
@@ -1911,8 +1962,8 @@ export default function DashboardView({
                       {/* Day view header */}
                       <div className="flex items-center justify-between border-b pb-2">
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                          <h4 className="text-xs font-bold text-gray-800">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <h4 className="text-xs font-black text-gray-850">
                             {calendarReferenceDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })} Programı
                           </h4>
                         </div>
@@ -1932,7 +1983,7 @@ export default function DashboardView({
                       </div>
 
                       {/* Day timeline */}
-                      <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
                         {(() => {
                           const dayActs = getActivitiesForDate(calendarReferenceDate);
                           if (dayActs.length === 0) {
@@ -1947,30 +1998,38 @@ export default function DashboardView({
 
                           return dayActs.map((act) => {
                             const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                            let badgeClass = 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-gray-100';
-                            let labelClass = 'bg-gray-100 text-gray-800';
+                            
+                            let borderLeftColor = 'border-l-gray-450';
+                            let badgeClass = 'bg-gray-50 border-gray-150 text-gray-700 hover:bg-gray-100';
+                            let labelClass = 'bg-gray-100 text-gray-800 border-gray-200';
+                            
                             if (act.type === 'Spor') {
-                              badgeClass = 'bg-sky-50/50 border-sky-100 text-sky-800 hover:bg-sky-50';
-                              labelClass = 'bg-sky-100 text-sky-800';
+                              borderLeftColor = 'border-l-sky-500';
+                              badgeClass = 'bg-sky-50/40 border-sky-100 text-sky-850 hover:bg-sky-50';
+                              labelClass = 'bg-sky-100 text-sky-800 border-sky-200';
                             } else if (act.type === 'Atölye') {
-                              badgeClass = 'bg-amber-50/50 border-amber-100 text-amber-800 hover:bg-amber-50';
-                              labelClass = 'bg-amber-100 text-amber-800';
+                              borderLeftColor = 'border-l-amber-500';
+                              badgeClass = 'bg-amber-50/40 border-amber-100 text-amber-905 hover:bg-amber-50';
+                              labelClass = 'bg-amber-100 text-amber-850 border-amber-200';
                             } else if (act.type === 'Eğitim') {
-                              badgeClass = 'bg-emerald-50/50 border-emerald-100 text-emerald-800 hover:bg-emerald-50';
-                              labelClass = 'bg-emerald-100 text-emerald-800';
+                              borderLeftColor = 'border-l-emerald-500';
+                              badgeClass = 'bg-emerald-50/40 border-emerald-100 text-emerald-850 hover:bg-emerald-50';
+                              labelClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
                             } else if (act.type === 'Seminer') {
-                              badgeClass = 'bg-purple-50/50 border-purple-100 text-purple-800 hover:bg-purple-50';
-                              labelClass = 'bg-purple-100 text-purple-800';
+                              borderLeftColor = 'border-l-purple-500';
+                              badgeClass = 'bg-purple-50/40 border-purple-100 text-purple-850 hover:bg-purple-50';
+                              labelClass = 'bg-purple-100 text-purple-800 border-purple-200';
                             } else if (act.type === 'Eğlence') {
-                              badgeClass = 'bg-pink-50/50 border-pink-100 text-pink-800 hover:bg-pink-50';
-                              labelClass = 'bg-pink-100 text-pink-800';
+                              borderLeftColor = 'border-l-pink-500';
+                              badgeClass = 'bg-pink-50/40 border-pink-100 text-pink-850 hover:bg-pink-50';
+                              labelClass = 'bg-pink-100 text-pink-800 border-pink-200';
                             }
 
                             return (
                               <div
                                 key={act.id}
                                 onClick={() => setSelectedDetailedEvent(act)}
-                                className={`p-3 rounded-xl border flex items-center justify-between gap-4 transition text-left cursor-pointer hover:shadow-xs ${badgeClass}`}
+                                className={`p-3 rounded-xl border-t border-r border-b border-l-4 flex items-center justify-between gap-4 transition text-left cursor-pointer hover:shadow-xs ${borderLeftColor} ${badgeClass}`}
                               >
                                 <div className="flex items-start gap-3">
                                   {/* Time Badge */}
@@ -1982,16 +2041,16 @@ export default function DashboardView({
                                   {/* Details */}
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className={`text-[8px] font-extrabold px-2 py-0.5 rounded-full tracking-wider uppercase ${labelClass}`}>
+                                      <span className={`text-[8px] font-black px-2 py-0.5 rounded-full tracking-wider uppercase border ${labelClass}`}>
                                         {act.type}
                                       </span>
-                                      <span className="text-[10px] text-gray-500 font-semibold flex items-center gap-1">
-                                        <MapPin className="w-3 h-3 text-gray-400" /> {act.location}
+                                      <span className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+                                        <MapPin className="w-3 h-3 text-gray-450" /> {act.location}
                                       </span>
                                     </div>
-                                    <h5 className="text-xs font-bold text-gray-800">{act.title}</h5>
+                                    <h5 className="text-xs font-bold text-gray-850">{act.title}</h5>
                                     <p className="text-[10px] text-gray-500 font-semibold">
-                                      Sorumlu Eğitmen: <strong className="text-gray-600 font-extrabold">{act.instructorId}</strong>
+                                      Sorumlu Eğitmen: <strong className="text-gray-700 font-extrabold">{act.instructorId}</strong>
                                     </p>
                                   </div>
                                 </div>
@@ -2046,39 +2105,59 @@ export default function DashboardView({
                           <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
                             {Object.keys(groups).map((dateStr) => (
                               <div key={dateStr} className="space-y-2 text-left">
-                                <h4 className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md tracking-wider uppercase inline-block">
+                                <h4 className="text-[10px] font-extrabold text-emerald-855 bg-emerald-50 px-2.5 py-1 rounded-md tracking-wider uppercase inline-block">
                                   {dateStr}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {groups[dateStr].map((act) => {
                                     const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                                    let badgeClass = 'bg-gray-100 text-gray-700';
-                                    if (act.type === 'Spor') badgeClass = 'bg-sky-50 text-sky-700 border border-sky-100';
-                                    else if (act.type === 'Atölye') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-100';
-                                    else if (act.type === 'Eğitim') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
-                                    else if (act.type === 'Seminer') badgeClass = 'bg-purple-50 text-purple-700 border border-purple-100';
-                                    else if (act.type === 'Eğlence') badgeClass = 'bg-pink-50 text-pink-700 border border-pink-100';
+                                    
+                                    let borderLeftColor = 'border-l-gray-450';
+                                    let containerBg = 'bg-gray-50/50 hover:bg-gray-50 border-gray-150';
+                                    let labelClass = 'bg-gray-100 text-gray-800 border-gray-205';
+                                    
+                                    if (act.type === 'Spor') {
+                                      borderLeftColor = 'border-l-sky-500';
+                                      containerBg = 'bg-sky-50/40 hover:bg-sky-50 border-sky-100';
+                                      labelClass = 'bg-sky-100 text-sky-800 border-sky-200';
+                                    } else if (act.type === 'Atölye') {
+                                      borderLeftColor = 'border-l-amber-500';
+                                      containerBg = 'bg-amber-50/40 hover:bg-amber-50 border-amber-100';
+                                      labelClass = 'bg-amber-100 text-amber-850 border-amber-200';
+                                    } else if (act.type === 'Eğitim') {
+                                      borderLeftColor = 'border-l-emerald-500';
+                                      containerBg = 'bg-emerald-50/40 hover:bg-emerald-50 border-emerald-100';
+                                      labelClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                                    } else if (act.type === 'Seminer') {
+                                      borderLeftColor = 'border-l-purple-500';
+                                      containerBg = 'bg-purple-50/40 hover:bg-purple-50 border-purple-100';
+                                      labelClass = 'bg-purple-100 text-purple-800 border-purple-200';
+                                    } else if (act.type === 'Eğlence') {
+                                      borderLeftColor = 'border-l-pink-500';
+                                      containerBg = 'bg-pink-50/40 hover:bg-pink-50 border-pink-100';
+                                      labelClass = 'bg-pink-100 text-pink-850 border-pink-200';
+                                    }
 
                                     return (
                                       <div
                                         key={act.id}
                                         onClick={() => setSelectedDetailedEvent(act)}
-                                        className="p-3 bg-gray-50/50 hover:bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl flex items-start justify-between gap-3 transition cursor-pointer hover:shadow-xs"
+                                        className={`p-3 border-t border-r border-b border-l-4 rounded-xl flex items-start justify-between gap-3 transition cursor-pointer hover:shadow-xs ${borderLeftColor} ${containerBg}`}
                                       >
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 flex-1 min-w-0">
                                           <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
+                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full tracking-wider uppercase border ${labelClass}`}>
                                               {act.type}
                                             </span>
-                                            <span className="text-[10px] text-gray-500 font-semibold">
-                                              {actTime}
+                                            <span className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+                                              <Clock className="w-3 h-3 text-gray-400" /> {actTime}
                                             </span>
                                           </div>
-                                          <h4 className="text-xs font-bold text-gray-805 line-clamp-1">{act.title}</h4>
-                                          <p className="text-[10px] text-gray-400 font-semibold flex items-center gap-1">
-                                            <span>Konum: <strong className="text-gray-500">{act.location}</strong></span>
+                                          <h4 className="text-xs font-bold text-gray-850 line-clamp-1">{act.title}</h4>
+                                          <p className="text-[10px] text-gray-500 font-semibold flex items-center gap-1.5 flex-wrap">
+                                            <span className="flex items-center gap-0.5 text-gray-500"><MapPin className="w-2.5 h-2.5 text-gray-400" /> {act.location}</span>
                                             <span className="text-gray-300">|</span>
-                                            <span>Eğitmen: <strong className="text-gray-500">{act.instructorId}</strong></span>
+                                            <span className="text-gray-500">Eğitmen: <strong className="text-gray-700 font-extrabold">{act.instructorId}</strong></span>
                                           </p>
                                         </div>
                                         <button
@@ -2086,7 +2165,7 @@ export default function DashboardView({
                                             e.stopPropagation();
                                             handleRemoveActivity(act.id);
                                           }}
-                                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition cursor-pointer"
+                                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
                                           title="Aktiviteyi programdan kaldır"
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
@@ -2263,7 +2342,12 @@ export default function DashboardView({
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-4">
-            <h4 className="text-2xs font-extrabold text-gray-400 tracking-wider uppercase">Yeşilay Tematik Kamp Dönem Yönetimi</h4>
+            <div className="flex justify-between items-center gap-2 flex-wrap">
+              <h4 className="text-2xs font-extrabold text-gray-400 tracking-wider uppercase">Yeşilay Tematik Kamp Dönem Yönetimi</h4>
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900 shadow-2xs">
+                🔄 Dönemler Takvime Otomatik Aktarılır
+              </span>
+            </div>
             
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {periods.map((per) => (

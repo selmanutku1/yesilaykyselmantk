@@ -2427,7 +2427,7 @@ export default function ParticipantView({
                   <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-1.5 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <span className="w-1.5 h-3 bg-emerald-600 rounded-sm inline-block"></span>
-                      Yazdırılacak Kuyruk ({selectedForBulk.length} Kişi)
+                      Yazdırılacaklar Listesi ({selectedForBulk.length} Kişi)
                     </span>
                     {selectedForBulk.length > 0 && (
                       <button
@@ -2443,7 +2443,7 @@ export default function ParticipantView({
                     {selectedForBulk.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center p-4 text-center text-gray-400">
                         <Users className="w-8 h-8 opacity-40 mb-2" />
-                        <p className="text-[10px] font-semibold">Kuyrukta katılımcı bulunmuyor.</p>
+                        <p className="text-[10px] font-semibold">Listede katılımcı bulunmuyor.</p>
                       </div>
                     ) : (
                       participants
@@ -2469,7 +2469,7 @@ export default function ParticipantView({
                               <button
                                 onClick={() => setSelectedForBulk(selectedForBulk.filter((id) => id !== p.id))}
                                 className="p-1 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-md transition cursor-pointer md:opacity-0 group-hover:opacity-100"
-                                title="Kuyruktan Çıkar"
+                                title="Listeden Çıkar"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
