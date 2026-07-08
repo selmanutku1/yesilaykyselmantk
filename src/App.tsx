@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { 
   INITIAL_CAMP_CENTERS, 
   INITIAL_BUNGALOWS, 
@@ -45,6 +46,7 @@ import {
 
 // Importing our modular sub-views
 import DashboardView from './components/DashboardView';
+import PeriodManagementView from './components/PeriodManagementView';
 import BungalowView from './components/BungalowView';
 import ParticipantView from './components/ParticipantView';
 import RegistrationView from './components/RegistrationView';
@@ -126,7 +128,7 @@ export interface LoginUser {
   username: string;
   role: 'admin' | 'mudur' | 'kayit' | 'saglik' | 'yemekhane' | 'teknik' | 'guvenlik' | 'gonullu';
   roleName: string;
-  allowedTabs: ('dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit')[];
+  allowedTabs: ('dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit')[];
 }
 
 export const USERS_LIST: LoginUser[] = [
@@ -136,7 +138,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'admin',
     role: 'admin',
     roleName: 'Sistem Yöneticisi',
-    allowedTabs: ['dashboard', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit']
   },
   {
     id: 'S01',
@@ -144,7 +146,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'mudur',
     role: 'mudur',
     roleName: 'Kamp Müdürü',
-    allowedTabs: ['dashboard', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit']
   },
   {
     id: 'S02',
@@ -195,6 +197,47 @@ export const USERS_LIST: LoginUser[] = [
     allowedTabs: ['guvenlik', 'katilimci', 'olay-kayit']
   }
 ];
+
+const SidebarNavItem = ({
+  id,
+  label,
+  icon: Icon,
+  isActive,
+  isSidebarCollapsed,
+  onClick,
+  isDanger = false,
+  extraContent = null
+}: any) => {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.96 }}
+      onClick={onClick}
+      title={label}
+      className={`relative flex items-center rounded-xl text-xs font-bold transition-colors text-left ${
+        isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
+      } ${
+        isActive 
+          ? (isDanger ? 'text-white' : 'text-white') 
+          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
+      }`}
+    >
+      {isActive && (
+        <motion.div
+          layoutId="sidebar-active-bg"
+          className={`absolute inset-0 rounded-xl shadow-xs ${isDanger ? 'bg-red-600' : 'bg-emerald-700'}`}
+          transition={{ type: "spring", stiffness: 350, damping: 30 }}
+        />
+      )}
+      <div className="relative z-10 flex items-center gap-3 w-full">
+        <Icon className="w-4 h-4 shrink-0" />
+        <span className={`flex-1 ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
+          {label}
+        </span>
+        {extraContent}
+      </div>
+    </motion.button>
+  );
+};
 
 export default function App() {
   // Master states representing KYS persistent database
@@ -486,7 +529,7 @@ export default function App() {
   };
 
   // Active navigation tab
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit'>('dashboard');
   const [registrationSubTab, setRegistrationSubTab] = useState<'form' | 'queue'>('form');
   const [technicalSubTab, setTechnicalSubTab] = useState<'dashboard' | 'issues' | 'requests' | 'ai-copilot' | 'reports' | 'areas'>('dashboard');
   const [isKayitMenuOpen, setIsKayitMenuOpen] = useState<boolean>(true);
@@ -496,8 +539,10 @@ export default function App() {
   const [externalSelectedParticipantId, setExternalSelectedParticipantId] = useState<string | null>(null);
 
   // Check role-based tab access
-  const hasAccess = (tab: 'dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
+  const hasAccess = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
     if (!currentUser) return false;
+    if (tab === 'kamp-planlama' && (currentUser.role === 'admin' || currentUser.role === 'mudur')) return true;
+    if (currentUser.role === 'admin') return true;
     return currentUser.allowedTabs.includes(tab);
   };
 
@@ -588,7 +633,7 @@ export default function App() {
     };
   }, [isMobileMenuOpen]);
 
-  const handleActiveTabChange = (tab: 'dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
+  const handleActiveTabChange = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
     if (hasAccess(tab)) {
       setActiveTab(tab);
     }
@@ -1654,64 +1699,62 @@ export default function App() {
           )}
 
           {hasAccess('dashboard') && (
-            <button
+            <SidebarNavItem
+              id="dashboard"
+              label="Kontrol Paneli (Dashboard)"
+              icon={LayoutDashboard}
+              isActive={activeTab === 'dashboard'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('dashboard')}
-              title="Kontrol Paneli (Dashboard)"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'dashboard' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Kontrol Paneli (Dashboard)
-              </span>
-            </button>
+              hasAccessCheck={true}
+            />
+          )}
+
+          {hasAccess('kamp-planlama') && (
+            <SidebarNavItem
+              id="kamp-planlama"
+              label="Kamp Planlama"
+              icon={Calendar}
+              isActive={activeTab === 'kamp-planlama'}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onClick={() => handleActiveTabChange('kamp-planlama')}
+              hasAccessCheck={true}
+            />
           )}
 
           {hasAccess('bungalov') && (
-            <button
+            <SidebarNavItem
+              id="bungalov"
+              label="Bungalov & Yerleşim"
+              icon={Home}
+              isActive={activeTab === 'bungalov'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('bungalov')}
-              title={`Bungalov & Yerleşim (${centerBungalows.length} Oda)`}
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'bungalov' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Home className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Bungalov &amp; Yerleşim ({centerBungalows.length} Oda)
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('katilimci') && (
-            <button
+            <SidebarNavItem
+              id="katilimci"
+              label="Katılımcı Defteri"
+              icon={Users}
+              isActive={activeTab === 'katilimci'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('katilimci')}
-              title="Katılımcı Defteri"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'katilimci' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Users className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Katılımcı Defteri
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('kayit') && (
-            <button
+            <SidebarNavItem
+              id="kayit"
+              label="Ön Kayıtlar & Muvafakat"
+              icon={FileText}
+              isActive={activeTab === 'kayit'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => {
                 if (activeTab === 'kayit') {
                   setIsKayitMenuOpen(!isKayitMenuOpen);
@@ -1720,23 +1763,13 @@ export default function App() {
                   setIsKayitMenuOpen(true);
                 }
               }}
-              title="Ön Kayıtlar & Muvafakat"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'kayit' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <FileText className="w-4 h-4 shrink-0" />
-              <span className={`flex-1 ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Ön Kayıtlar &amp; Muvafakat
-              </span>
-              {!isSidebarCollapsed && activeTab === 'kayit' && (
-                isKayitMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
-              )}
-            </button>
+              hasAccessCheck={true}
+              extraContent={
+                !isSidebarCollapsed && activeTab === 'kayit' && (
+                  isKayitMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                )
+              }
+            />
           )}
 
           {/* Sub-menu categories under Kayıt when active */}
@@ -1768,45 +1801,37 @@ export default function App() {
           )}
 
           {hasAccess('revir') && (
-            <button
+            <SidebarNavItem
+              id="revir"
+              label="Revir & Sağlık Modülü"
+              icon={HeartHandshake}
+              isActive={activeTab === 'revir'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('revir')}
-              title="Revir & Sağlık Modülü"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'revir' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <HeartHandshake className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Revir &amp; Sağlık Modülü
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('yemekhane') && (
-            <button
+            <SidebarNavItem
+              id="yemekhane"
+              label="Yemekhane & Öğün Planlama"
+              icon={UtensilsCrossed}
+              isActive={activeTab === 'yemekhane'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('yemekhane')}
-              title="Yemekhane & Öğün Planlama"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'yemekhane' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <UtensilsCrossed className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Yemekhane &amp; Öğün Planlama
-              </span>
-            </button>
+              hasAccessCheck={true}
+            />
           )}
 
           {hasAccess('teknik') && (
-            <button
+            <SidebarNavItem
+              id="teknik"
+              label="Teknik İşler & Talepler"
+              icon={Wrench}
+              isActive={activeTab === 'teknik'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => {
                 if (activeTab === 'teknik') {
                   setIsTeknikMenuOpen(!isTeknikMenuOpen);
@@ -1815,23 +1840,13 @@ export default function App() {
                   setIsTeknikMenuOpen(true);
                 }
               }}
-              title="Teknik İşler & Talepler"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'teknik' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Wrench className="w-4 h-4 shrink-0" />
-              <span className={`flex-1 ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Teknik İşler &amp; Talepler
-              </span>
-              {!isSidebarCollapsed && activeTab === 'teknik' && (
-                isTeknikMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
-              )}
-            </button>
+              hasAccessCheck={true}
+              extraContent={
+                !isSidebarCollapsed && activeTab === 'teknik' && (
+                  isTeknikMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                )
+              }
+            />
           )}
 
           {/* Sub-menu categories under Teknik when active */}
@@ -1907,64 +1922,44 @@ export default function App() {
           )}
 
           {hasAccess('guvenlik') && (
-            <button
+            <SidebarNavItem
+              id="guvenlik"
+              label="Güvenlik & Nöbetler"
+              icon={Shield}
+              isActive={activeTab === 'guvenlik'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('guvenlik')}
-              title="Güvenlik & Operasyon"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'guvenlik' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Shield className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Güvenlik &amp; Operasyon
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('maliyet') && (
             <>
               <span className={`text-4xs font-extrabold text-gray-400 tracking-widest uppercase mt-6 mb-2 px-3 block ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>FİNANSAL ANALİZ</span>
-
-              <button
+              <SidebarNavItem
+                id="maliyet"
+                label="Maliyet Analiz Modülü"
+                icon={Coins}
+                isActive={activeTab === 'maliyet'}
+                isSidebarCollapsed={isSidebarCollapsed}
                 onClick={() => handleActiveTabChange('maliyet')}
-                title="Katılımcı Maliyet Analiz Modülü"
-                className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                  isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-                } ${
-                  activeTab === 'maliyet' 
-                    ? 'bg-emerald-700 text-white shadow-xs' 
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Coins className="w-4 h-4 shrink-0" />
-                <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                  Maliyet Analiz Modülü
-                </span>
-              </button>
+                hasAccessCheck={true}
+              />
             </>
           )}
 
           {hasAccess('anket-analizi') && (
-            <button
+            <SidebarNavItem
+              id="anket-analizi"
+              label="Kamp Sonu Değerlendirme Analizi"
+              icon={FileText}
+              isActive={activeTab === 'anket-analizi'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('anket-analizi')}
-              title="Kamp Sonu Değerlendirme Analizi"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'anket-analizi' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <FileText className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Memnuniyet Analizi
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {(hasAccess('dokümanlar') || hasAccess('ayarlar') || hasAccess('dijital-arsiv') || hasAccess('olay-kayit')) && (
@@ -1972,98 +1967,68 @@ export default function App() {
           )}
 
           {hasAccess('dijital-arsiv') && (
-            <button
+            <SidebarNavItem
+              id="dijital-arsiv"
+              label="Dijital Arşiv"
+              icon={Archive}
+              isActive={activeTab === 'dijital-arsiv'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('dijital-arsiv')}
-              title="Dijital Arşiv"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'dijital-arsiv' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Archive className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Dijital Arşiv
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('dokümanlar') && (
-            <button
+            <SidebarNavItem
+              id="dokümanlar"
+              label="KYS Sistem Tasarım Analizi"
+              icon={BookOpen}
+              isActive={activeTab === 'dokümanlar'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('dokümanlar')}
-              title="KYS Sistem Tasarım Analizi"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'dokümanlar' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <BookOpen className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                KYS Sistem Tasarım Analizi
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('ayarlar') && (
-            <button
+            <SidebarNavItem
+              id="ayarlar"
+              label="Genel Ayarlar"
+              icon={Settings}
+              isActive={activeTab === 'ayarlar'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('ayarlar')}
-              title="Genel Ayarlar"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'ayarlar' 
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Settings className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Genel Ayarlar
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           {hasAccess('olay-kayit') && (
-            <button
+            <SidebarNavItem
+              id="olay-kayit"
+              label="Olay Kayıt Sistemi"
+              icon={AlertOctagon}
+              isActive={activeTab === 'olay-kayit'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('olay-kayit')}
-              title="Olay Kayıt Sistemi"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'olay-kayit'
-                  ? 'bg-red-600 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <AlertOctagon className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Olay Kayıt Sistemi
-              </span>
-            </button>
+              hasAccessCheck={true}
+              isDanger={true}
+            />
           )}
 
           {hasAccess('sistem-loglari') && (
-            <button
+            <SidebarNavItem
+              id="sistem-loglari"
+              label="Sistem Logları"
+              icon={Terminal}
+              isActive={activeTab === 'sistem-loglari'}
+              isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('sistem-loglari')}
-              title="Sistem Logları"
-              className={`flex items-center rounded-xl text-xs font-bold transition-all text-left ${
-                isSidebarCollapsed ? 'lg:justify-center lg:px-2 py-2.5' : 'px-3 py-2.5 gap-3'
-              } ${
-                activeTab === 'sistem-loglari'
-                  ? 'bg-emerald-700 text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Terminal className="w-4 h-4 shrink-0" />
-              <span className={`${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
-                Sistem Logları
-              </span>
-            </button>
+              hasAccessCheck={true}
+              
+            />
           )}
 
           <div className={`pt-6 border-t border-gray-100 text-center text-4xs text-gray-400 font-semibold space-y-1 ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>
@@ -2087,6 +2052,18 @@ export default function App() {
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-[1600px] mx-auto w-full">
           {/* Active Tab View routers */}
           
+          {activeTab === 'kamp-planlama' && (
+            <PeriodManagementView
+              periods={periods}
+              onAddPeriod={handleAddPeriod}
+              onUpdatePeriods={updatePeriods}
+              onAddLog={addSystemLog}
+              campCenters={campCenters}
+              selectedCampCenterId={selectedCenterId}
+              participants={participants}
+            />
+          )}
+
           {activeTab === 'dashboard' && (
             <DashboardView
               participants={participants}

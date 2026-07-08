@@ -176,7 +176,7 @@ export default function DocumentationTab() {
                 <div className="border-t border-emerald-150 pt-4">
                   <h5 className="font-bold text-emerald-900">B. Revir Müdahale ve Acil Durum Hiyerarşisi</h5>
                   <p className="text-sm text-gray-600 mt-1">
-                    Rahatsızlık Beyanı &rarr; Sağlık Görevlisi Muayenesi &rarr; Tanı ve Yerinde Müdahale &rarr; Ebeveyne Otomatik SMS/Mail Bildirimi &rarr; Sevki Gereken Durum &rarr; Kamp Müdürü Onayı ile Ambulans Entegrasyonu &rarr; Sistemde Log Kaydı ve Tıbbi Form Arşivleme.
+                    Rahatsızlık Beyanı &rarr; Sağlık Görevlisi Muayenesi &rarr; Tanı ve Yerinde Müdahale &rarr; Ebeveyne Otomatik SMS/Mail/WhatsApp Bildirimi &rarr; Sevki Gereken Durum &rarr; Kamp Müdürü Onayı ile Ambulans Entegrasyonu &rarr; Sistemde Log Kaydı ve Tıbbi Form Arşivleme.
                   </p>
                 </div>
               </div>
@@ -305,7 +305,7 @@ export default function DocumentationTab() {
                   <h5 className="font-bold text-emerald-800 mb-2">UC-01: Katılımcı Kayıt Kabul Senaryosu</h5>
                   <p className="text-gray-600">
                     <strong>Aktör:</strong> Katılımcı, Sistem Yöneticisi<br />
-                    <strong>Akış:</strong> Katılımcı web portalını açar. KVKK ve Taahhütname metinlerini onaylar. Geçmiş sağlık ve alerji bilgisini beyan eder. Kamp yöneticisi evrakları onayladığında bir SMS ve Davet QR Kodu katılımcıya iletilir.
+                    <strong>Akış:</strong> Katılımcı web portalını açar. KVKK ve Taahhütname metinlerini onaylar. Geçmiş sağlık ve alerji bilgisini beyan eder. Kamp yöneticisi evrakları onayladığında bir SMS, WhatsApp mesajı ve Davet QR Kodu katılımcıya iletilir.
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
@@ -319,7 +319,7 @@ export default function DocumentationTab() {
                   <h5 className="font-bold text-emerald-800 mb-2">UC-03: QR Kod Yoklama ve Turnike Senaryosu</h5>
                   <p className="text-gray-600">
                     <strong>Aktör:</strong> Katılımcı, Grup Lideri<br />
-                    <strong>Akış:</strong> Sabah içtima/spor veya yemekhanede gönüllü mobil uygulamasındaki dinamik QR kodunu okutur. Kamera/Barkod okuyucu kodu server-side deşifre eder. İlgili saat ve etkinliğe 'Mevcut' olarak işlenir. Katılmayanlar için liderine anlık SMS/Push notification düşer.
+                    <strong>Akış:</strong> Sabah içtima/spor veya yemekhanede gönüllü mobil uygulamasındaki dinamik QR kodunu okutur. Kamera/Barkod okuyucu kodu server-side deşifre eder. İlgili saat ve etkinliğe 'Mevcut' olarak işlenir. Katılmayanlar için liderine anlık SMS/WhatsApp/Push notification düşer.
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">

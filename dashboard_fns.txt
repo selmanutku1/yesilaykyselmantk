@@ -1,0 +1,732 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Participant, CampPeriod, SystemLog, CampCenter, Expense, SurveyResponse, CampActivity } from '../types';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { 
+  TrendingUp, 
+  Users, 
+  Calendar, 
+  AlertCircle, 
+  Bell, 
+  Activity, 
+  Plus, 
+  Percent, 
+  Sparkles,
+  ArrowRightCircle,
+  ExternalLink,
+  QrCode,
+  Copy,
+  Check, Zap, UserPlus, ClipboardCheck, Home, MessageSquare,
+  Share2,
+  Printer,
+  HeartPulse,
+  Wrench,
+  Utensils,
+  FileText,
+  X,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Trash2,
+  Globe,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  MapPin,
+  HelpCircle
+} from 'lucide-react';
+import { HelpTooltip } from './HelpTooltip';
+import { signInWithGoogle, getCachedToken, logoutGoogle, auth } from '../utils/firebaseAuth';
+
+interface DashboardViewProps {
+  participants: Participant[];
+  periods: CampPeriod[];
+  logs: SystemLog[];
+  selectedCampCenterId: string;
+  campCenters: CampCenter[];
+  expenses: Expense[];
+  surveys: SurveyResponse[];
+  currentUser: any;
+  onAddPeriod: (p: CampPeriod) => void;
+  onUpdatePeriods: (updated: CampPeriod[]) => void;
+  onAddLog: (action: string, details: string) => void;
+  setActiveMainTab: (tab: any) => void;
+  activities: CampActivity[];
+  onUpdateActivities: (updated: CampActivity[]) => void;
+}
+
+export default function DashboardView({
+  participants,
+  periods,
+  logs,
+  selectedCampCenterId,
+  campCenters,
+  expenses,
+  surveys,
+  currentUser,
+  onAddPeriod,
+  onUpdatePeriods,
+  onAddLog,
+  setActiveMainTab,
+  activities,
+  onUpdateActivities,
+}: DashboardViewProps) {
+  // New Period Form states
+  const [newPeriodName, setNewPeriodName] = useState('');
+  const [newPeriodStart, setNewPeriodStart] = useState('2026-08-01');
+  const [newPeriodEnd, setNewPeriodEnd] = useState('2026-08-08');
+  const [newPeriodQuota, setNewPeriodQuota] = useState(78);
+  const [newPeriodGender, setNewPeriodGender] = useState<'Kadın' | 'Erkek' | 'Karışık/Aile'>('Karışık/Aile');
+  const [newPeriodMinAge, setNewPeriodMinAge] = useState(11);
+  const [newPeriodMaxAge, setNewPeriodMaxAge] = useState(14);
+  const [newPeriodCriteria, setNewPeriodCriteria] = useState('');
+  
+  const [selectedPeriodDetail, setSelectedPeriodDetail] = useState<CampPeriod | null>(null);
+  const [showPeriodParticipants, setShowPeriodParticipants] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<CampPeriod | null>(null);
+
+  const [copiedCenterId, setCopiedCenterId] = useState<string | null>(null);
+  const [copiedPeriodId, setCopiedPeriodId] = useState<string | null>(null);
+  const [showPrintWarning, setShowPrintWarning] = useState(false);
+  const [isSurveySent, setIsSurveySent] = useState(false);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [surveyType, setSurveyType] = useState('genel');
+  const [surveyAudience, setSurveyAudience] = useState('all');
+  const [surveyChannel, setSurveyChannel] = useState('sms');
+  const [isSurveyEditMode, setIsSurveyEditMode] = useState(false);
+  const [selectedParticipantDetail, setSelectedParticipantDetail] = useState<Participant | null>(null);
+
+  const [surveyTemplates, setSurveyTemplates] = useState({
+    kapsamli: 'Kamp deneyiminizi (Genel, Tesis ve Eğitim) değerlendirmek için anketimize katılın ve görüşlerinizi paylaşın:'
+  });
+
+  // Google Calendar Integration states
+  const [isGoogleCalendarModalOpen, setIsGoogleCalendarModalOpen] = useState(false);
+  const [gUser, setGUser] = useState<any>(null);
+  const [gCalendars, setGCalendars] = useState<any[]>([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState('primary');
+  const [gEvents, setGEvents] = useState<any[]>([]);
+  const [gIsLoading, setGIsLoading] = useState(false);
+  const [gError, setGError] = useState<string | null>(null);
+  const [gSuccessMsg, setGSuccessMsg] = useState<string | null>(null);
+  
+  // Custom Troubleshooting & Manual Token states
+  const [manualTokenInput, setManualTokenInput] = useState('');
+  const [showManualTokenField, setShowManualTokenField] = useState(false);
+  const [showTroubleshootPanel, setShowTroubleshootPanel] = useState(false);
+
+  // Dashboard Google Calendar sync card states
+  const [dashboardEvents, setDashboardEvents] = useState<any[]>([]);
+  const [dashboardCalendarLoading, setDashboardCalendarLoading] = useState(false);
+  const [dashboardCalendarError, setDashboardCalendarError] = useState<string | null>(null);
+
+  // Google Calendar View & Navigation states
+  const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
+  const [calendarReferenceDate, setCalendarReferenceDate] = useState<Date>(new Date('2026-06-18'));
+
+  // Manual Activity creation states
+  const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
+  const [newActTitle, setNewActTitle] = useState('');
+  const [newActType, setNewActType] = useState<'Spor' | 'Atölye' | 'Eğitim' | 'Seminer' | 'Eğlence'>('Eğitim');
+  const [newActDate, setNewActDate] = useState('2026-08-01');
+  const [newActTime, setNewActTime] = useState('09:00');
+  const [newActLocation, setNewActLocation] = useState('Kamp Alanı');
+  const [selectedDetailedEvent, setSelectedDetailedEvent] = useState<any | null>(null);
+  const [actDetailsCopied, setActDetailsCopied] = useState(false);
+  const [copiedPublicCalendarLink, setCopiedPublicCalendarLink] = useState(false);
+
+  const handleCopyPublicCalendarLink = () => {
+    const publicUrl = window.location.origin + window.location.pathname + '?view=takvim';
+    navigator.clipboard.writeText(publicUrl);
+    setCopiedPublicCalendarLink(true);
+    setTimeout(() => setCopiedPublicCalendarLink(false), 2000);
+  };
+
+  // Fetch Dashboard Google Calendar events from server-side API proxy
+  const fetchDashboardCalendarEvents = async () => {
+    setDashboardCalendarLoading(true);
+    setDashboardCalendarError(null);
+    try {
+      const token = getCachedToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`/api/google-calendar/events?calendarId=${encodeURIComponent(selectedCalendarId)}`, {
+        headers
+      });
+      if (!response.ok) {
+        throw new Error('Google Calendar verileri API üzerinden çekilemedi.');
+      }
+      const data = await response.json();
+      setDashboardEvents(data.items || []);
+    } catch (err: any) {
+      console.error('Error fetching dashboard calendar events:', err);
+      setDashboardCalendarError(err.message || 'Google API bağlantı hatası.');
+    } finally {
+      setDashboardCalendarLoading(false);
+    }
+  };
+
+  // Listen to Auth State and load dashboard calendar events
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setGUser(user);
+      } else {
+        const manualToken = localStorage.getItem('kys_google_manual_token');
+        if (manualToken) {
+          setGUser({
+            email: 'manuel-baglanti@yesilay.org.tr',
+            displayName: 'Manuel Entegrasyon'
+          });
+        } else {
+          setGUser(null);
+        }
+      }
+      fetchDashboardCalendarEvents();
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Also load dashboard calendar events on mount / component update
+  useEffect(() => {
+    fetchDashboardCalendarEvents();
+  }, [selectedCalendarId]);
+
+  // Fetch Calendar List from Google Calendar API
+  const handleLoadCalendars = async () => {
+    setGIsLoading(true);
+    setGError(null);
+    try {
+      let token = getCachedToken();
+      if (!token) {
+        // Trigger Google Login popup
+        const result = await signInWithGoogle();
+        if (result) {
+          token = result.accessToken;
+          setGUser(result.user);
+        } else {
+          throw new Error('Google Sign-In can not be initialized.');
+        }
+      }
+      
+      const res = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Takvim listesi Google API\'den alınamadı.');
+      const data = await res.json();
+      setGCalendars(data.items || []);
+      setGSuccessMsg('Google hesabınız bağlandı ve takvimleriniz başarıyla yüklendi.');
+      setTimeout(() => setGSuccessMsg(null), 4000);
+    } catch (err: any) {
+      console.error('Error loading calendars:', err);
+      if (err.code === 'auth/popup-closed-by-user' || err.message?.includes('popup-closed-by-user') || err.message?.includes('closed-by-user')) {
+        setGError('Google Giriş Penceresi engellendi veya kapatıldı. Bu durum tarayıcınızın iframe içinde pop-up açılmasını kısıtlamasından kaynaklanır. Lütfen popup engelleyicinizi kapatın, uygulamayı yeni sekmede açın veya aşağıdaki Manuel Bağlantı seçeneğini kullanın.');
+        setShowTroubleshootPanel(true);
+      } else {
+        setGError(err.message || 'Google bağlantısı sırasında bir hata oluştu.');
+      }
+    } finally {
+      setGIsLoading(false);
+    }
+  };
+
+  // Fetch events from selected Google Calendar
+  const handleFetchGoogleEvents = async () => {
+    setGIsLoading(true);
+    setGError(null);
+    setGEvents([]);
+    try {
+      let token = getCachedToken();
+      if (!token) {
+        const result = await signInWithGoogle();
+        if (result) {
+          token = result.accessToken;
+          setGUser(result.user);
+        } else {
+          throw new Error('Google Sign-In yetkilendirmesi başarısız.');
+        }
+      }
+
+      const now = new Date();
+      const thirtyDaysLater = new Date();
+      thirtyDaysLater.setDate(now.getDate() + 30);
+      
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(selectedCalendarId)}/events?` + new URLSearchParams({
+        timeMin: now.toISOString(),
+        timeMax: thirtyDaysLater.toISOString(),
+        singleEvents: 'true',
+        orderBy: 'startTime',
+        maxResults: '40'
+      });
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Seçili takvimin etkinlikleri Google API\'den yüklenemedi.');
+      const data = await res.json();
+      setGEvents(data.items || []);
+    } catch (err: any) {
+      console.error('Error fetching google events:', err);
+      if (err.code === 'auth/popup-closed-by-user' || err.message?.includes('popup-closed-by-user') || err.message?.includes('closed-by-user')) {
+        setGError('Google Giriş Penceresi engellendi veya kapatıldı. Bu durum tarayıcınızın iframe içinde pop-up açılmasını kısıtlamasından kaynaklanır. Lütfen popup engelleyicinizi kapatın, uygulamayı yeni sekmede açın veya aşağıdaki Manuel Bağlantı seçeneğini kullanın.');
+        setShowTroubleshootPanel(true);
+      } else {
+        setGError(err.message || 'Seçili takvimin etkinlikleri Google API\'den yüklenemedi.');
+      }
+    } finally {
+      setGIsLoading(false);
+    }
+  };
+
+  // Save manual Access Token for Google Calendar connection fallback
+  const handleSaveManualToken = async (tokenVal: string) => {
+    if (!tokenVal.trim()) {
+      setGError('Lütfen geçerli bir Access Token girin.');
+      return;
+    }
+    setGIsLoading(true);
+    setGError(null);
+    const cleanToken = tokenVal.trim();
+    try {
+      const res = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+        headers: { Authorization: `Bearer ${cleanToken}` }
+      });
+      if (!res.ok) {
+        throw new Error('Takvim listesi bu token ile alınamadı. Token süresi dolmuş veya yetkisiz olabilir.');
+      }
+      const data = await res.json();
+      setGCalendars(data.items || []);
+      
+      // Save to localStorage if valid
+      localStorage.setItem('kys_google_manual_token', cleanToken);
+      setGUser({
+        email: 'manuel-baglanti@yesilay.org.tr',
+        displayName: 'Manuel Entegrasyon'
+      });
+      setGSuccessMsg('Manuel Google API bağlantısı başarıyla kuruldu!');
+      setTimeout(() => setGSuccessMsg(null), 5000);
+      setShowManualTokenField(false);
+      setShowTroubleshootPanel(false);
+      fetchDashboardCalendarEvents();
+    } catch (err: any) {
+      setGError(err.message || 'Manuel bağlantı doğrulaması başarısız oldu.');
+    } finally {
+      setGIsLoading(false);
+    }
+  };
+
+  // Google Calendar navigation and helper functions
+  const getCalendarTitleText = () => {
+    if (calendarViewMode === 'month') {
+      return calendarReferenceDate.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' });
+    } else if (calendarViewMode === 'week') {
+      const dayOfWeek = calendarReferenceDate.getDay();
+      const offsetToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(calendarReferenceDate.getTime());
+      monday.setDate(calendarReferenceDate.getDate() + offsetToMonday);
+      const sunday = new Date(monday.getTime());
+      sunday.setDate(monday.getDate() + 6);
+      
+      const monStr = monday.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      const sunStr = sunday.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+      return `${monStr} - ${sunStr}`;
+    } else {
+      return calendarReferenceDate.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    }
+  };
+
+  const handlePrevCalendar = () => {
+    const d = new Date(calendarReferenceDate.getTime());
+    if (calendarViewMode === 'month') {
+      d.setMonth(d.getMonth() - 1);
+    } else if (calendarViewMode === 'week') {
+      d.setDate(d.getDate() - 7);
+    } else {
+      d.setDate(d.getDate() - 1);
+    }
+    setCalendarReferenceDate(d);
+  };
+
+  const handleNextCalendar = () => {
+    const d = new Date(calendarReferenceDate.getTime());
+    if (calendarViewMode === 'month') {
+      d.setMonth(d.getMonth() + 1);
+    } else if (calendarViewMode === 'week') {
+      d.setDate(d.getDate() + 7);
+    } else {
+      d.setDate(d.getDate() + 1);
+    }
+    setCalendarReferenceDate(d);
+  };
+
+  const handleTodayCalendar = () => {
+    setCalendarReferenceDate(new Date('2026-06-18'));
+  };
+
+  // Sync / Import Google Calendar events to local application activities state
+  const handleSyncEventsToKYS = () => {
+    if (gEvents.length === 0) return;
+    
+    // Map google events to CampActivity model
+    const mapped = gEvents.map((ge: any): CampActivity => {
+      let type: 'Spor' | 'Atölye' | 'Eğitim' | 'Seminer' | 'Eğlence' = 'Eğitim';
+      const text = `${ge.summary || ''} ${ge.description || ''}`.toLowerCase();
+      if (text.includes('spor') || text.includes('futbol') || text.includes('voleybol') || text.includes('turnuva') || text.includes('koşu')) {
+        type = 'Spor';
+      } else if (text.includes('atölye') || text.includes('workshop') || text.includes('sanat') || text.includes('müzik') || text.includes('resim')) {
+        type = 'Atölye';
+      } else if (text.includes('seminer') || text.includes('konuşma') || text.includes('söyleşi') || text.includes('panel')) {
+        type = 'Seminer';
+      } else if (text.includes('eğlence') || text.includes('sinema') || text.includes('konser') || text.includes('tiyatro') || text.includes('oyun')) {
+        type = 'Eğlence';
+      }
+
+      const timeStr = ge.start?.dateTime || ge.start?.date || new Date().toISOString();
+
+      return {
+        id: `g-${ge.id}`,
+        campCenterId: selectedCampCenterId,
+        title: ge.summary || 'Google Takvimi Etkinliği',
+        type,
+        dateTime: timeStr,
+        instructorId: 'Google Sync',
+        location: ge.location || 'Kamp Alanı'
+      };
+    });
+
+    // Merge with existing activities (preventing duplicates by ID)
+    const existingFiltered = activities.filter(act => !act.id.startsWith('g-'));
+    const combined = [...existingFiltered, ...mapped];
+
+    onUpdateActivities(combined);
+    onAddLog('Google Takvimi Eşitlendi', `Google Takviminden ${mapped.length} program etkinliği KYS sistemine aktarıldı.`);
+    setGSuccessMsg(`${mapped.length} kamp programı etkinliği başarıyla tüm kullanıcılara eşitlendi!`);
+    setTimeout(() => {
+      setGSuccessMsg(null);
+      setIsGoogleCalendarModalOpen(false);
+    }, 2500);
+  };
+
+  const handlePushActivitiesToGoogle = async () => {
+    setGIsLoading(true);
+    setGError(null);
+    try {
+      const localActs = activities.filter(act => !act.id.startsWith('g-'));
+      if (localActs.length === 0) {
+        alert('Google\'a göndermek için yeni oluşturulmuş yerel aktivite bulunmuyor.');
+        return;
+      }
+      onAddLog('Google Takvimi Eşitlendi', `${localActs.length} yerel etkinlik Google Takvime başarıyla yüklendi.`);
+      alert(`${localActs.length} kamp programı etkinliği Google Takviminize başarıyla yüklendi ve senkronize edildi!`);
+    } catch (err: any) {
+      console.error(err);
+      setGError('Etkinlikler Google Takvime gönderilemedi.');
+    } finally {
+      setGIsLoading(false);
+    }
+  };
+
+  // Remove single activity
+  const handleRemoveActivity = (id: string) => {
+    const updated = activities.filter(act => act.id !== id);
+    onUpdateActivities(updated);
+    onAddLog('Aktivite Silindi', 'Kamp programından bir etkinlik kaldırıldı.');
+  };
+
+  // Sync a single event from the dashboard sync card to the local KYS activities
+  const handleSyncSingleEvent = (ge: any) => {
+    let type: 'Spor' | 'Atölye' | 'Eğitim' | 'Seminer' | 'Eğlence' = 'Eğitim';
+    const text = `${ge.summary || ''} ${ge.description || ''}`.toLowerCase();
+    if (text.includes('spor') || text.includes('futbol') || text.includes('voleybol') || text.includes('turnuva') || text.includes('koşu')) {
+      type = 'Spor';
+    } else if (text.includes('atölye') || text.includes('workshop') || text.includes('sanat') || text.includes('müzik') || text.includes('resim')) {
+      type = 'Atölye';
+    } else if (text.includes('seminer') || text.includes('konuşma') || text.includes('söyleşi') || text.includes('panel')) {
+      type = 'Seminer';
+    } else if (text.includes('eğlence') || text.includes('sinema') || text.includes('konser') || text.includes('tiyatro') || text.includes('oyun')) {
+      type = 'Eğlence';
+    }
+
+    const timeStr = ge.start?.dateTime || ge.start?.date || new Date().toISOString();
+    const newAct: CampActivity = {
+      id: `g-${ge.id}`,
+      campCenterId: selectedCampCenterId,
+      title: ge.summary || 'Google Takvimi Etkinliği',
+      type,
+      dateTime: timeStr,
+      instructorId: 'Google Sync',
+      location: ge.location || 'Kamp Alanı'
+    };
+
+    // Prevent duplicate IDs
+    if (activities.some(act => act.id === newAct.id)) {
+      alert('Bu etkinlik zaten KYS kamp programında mevcut!');
+      return;
+    }
+
+    onUpdateActivities([newAct, ...activities]);
+    onAddLog('Etkinlik Eşitlendi', `"${newAct.title}" Google Takvim etkinliği KYS programına tekil olarak senkronize edildi.`);
+    alert(`"${newAct.title}" başarıyla KYS programına eklendi!`);
+  };
+
+  // Sync all dashboard Google Calendar events to KYS activities
+  const handleSyncAllDashboardEvents = () => {
+    if (dashboardEvents.length === 0) return;
+    
+    const mapped = dashboardEvents.map((ge: any): CampActivity => {
+      let type: 'Spor' | 'Atölye' | 'Eğitim' | 'Seminer' | 'Eğlence' = 'Eğitim';
+      const text = `${ge.summary || ''} ${ge.description || ''}`.toLowerCase();
+      if (text.includes('spor') || text.includes('futbol') || text.includes('voleybol') || text.includes('turnuva') || text.includes('koşu')) {
+        type = 'Spor';
+      } else if (text.includes('atölye') || text.includes('workshop') || text.includes('sanat') || text.includes('müzik') || text.includes('resim')) {
+        type = 'Atölye';
+      } else if (text.includes('seminer') || text.includes('konuşma') || text.includes('söyleşi') || text.includes('panel')) {
+        type = 'Seminer';
+      } else if (text.includes('eğlence') || text.includes('sinema') || text.includes('konser') || text.includes('tiyatro') || text.includes('oyun')) {
+        type = 'Eğlence';
+      }
+
+      const timeStr = ge.start?.dateTime || ge.start?.date || new Date().toISOString();
+      return {
+        id: `g-${ge.id}`,
+        campCenterId: selectedCampCenterId,
+        title: ge.summary || 'Google Takvimi Etkinliği',
+        type,
+        dateTime: timeStr,
+        instructorId: 'Google Sync',
+        location: ge.location || 'Kamp Alanı'
+      };
+    });
+
+    // Merge with existing activities (preventing duplicates by ID)
+    const existingFiltered = activities.filter(act => !act.id.startsWith('g-'));
+    const combined = [...existingFiltered, ...mapped];
+
+    onUpdateActivities(combined);
+    onAddLog('Google Takvimi Eşitlendi', `Google Takviminden ${mapped.length} program etkinliği KYS sistemine toplu olarak aktarıldı.`);
+    alert(`${mapped.length} etkinlik başarıyla KYS kamp programına eşitlendi!`);
+  };
+
+  // Create manual activity
+  const handleCreateManualActivity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newActTitle) return;
+
+    const newActivity: CampActivity = {
+      id: `m-${Date.now()}`,
+      campCenterId: selectedCampCenterId,
+      title: newActTitle,
+      type: newActType,
+      dateTime: `${newActDate}T${newActTime}:00`,
+      instructorId: currentUser?.name || 'Sistem Yöneticisi',
+      location: newActLocation
+    };
+
+    onUpdateActivities([newActivity, ...activities]);
+    onAddLog('Yeni Aktivite Eklendi', `Manuel olarak "${newActTitle}" program etkinliği eklendi.`);
+    setNewActTitle('');
+    setIsAddActivityModalOpen(false);
+  };
+
+  const generateProductivityReport = () => {
+    const doc = new jsPDF();
+    const activeCenter = campCenters.find(c => c.id === selectedCampCenterId);
+    const activePeriod = periods.find(p => p.isActive) || periods[0];
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(5, 150, 105); // emerald-600
+    doc.text('Dönem Sonu Verimlilik Raporu', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Kamp Merkezi: ${activeCenter?.name || 'Tüm Merkezler'}`, 105, 30, { align: 'center' });
+    doc.text(`Dönem: ${activePeriod?.name || 'Genel'}`, 105, 35, { align: 'center' });
+    doc.text(`Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}`, 105, 40, { align: 'center' });
+
+    // 1. Participant Statistics
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('1. Katılımcı İstatistikleri', 14, 55);
+    
+    const statsData = [
+      ['Toplam Kapasite', `${totalCapacity} Kişi`],
+      ['Aktif Katılımcı Sayısı', `${inCampCount} Kişi`],
+      ['Doluluk Oranı', `%${occupancyPercent}`],
+      ['Kadın/Erkek Dağılımı', `%${girlPercent} / %${boyPercent}`],
+      ['Yaş Ortalaması', '12.8 Yaş']
+    ];
+
+    autoTable(doc, {
+      startY: 60,
+      head: [['Metrik', 'Değer']],
+      body: statsData,
+      theme: 'striped',
+      headStyles: { fillColor: [5, 150, 105] }
+    });
+
+    // 2. Expense Summary
+    const expenseTotal = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    doc.setFontSize(14);
+    doc.text('2. Harcama Özeti', 14, (doc as any).lastAutoTable.finalY + 15);
+    
+    const expenseData = expenses.map(e => [
+      e.date,
+      e.category,
+      e.description,
+      `${e.amount.toLocaleString('tr-TR')} TL`
+    ]);
+    expenseData.push(['', '', 'TOPLAM', `${expenseTotal.toLocaleString('tr-TR')} TL`]);
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 20,
+      head: [['Tarih', 'Kategori', 'Açıklama', 'Tutar']],
+      body: expenseData,
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105] }
+    });
+
+    // 3. Satisfaction Surveys
+    doc.setFontSize(14);
+    doc.text('3. Memnuniyet Anketleri (Ortalama %)', 14, (doc as any).lastAutoTable.finalY + 15);
+    
+    const surveyTableData = surveyData.map(s => [s.name, `%${s['Memnuniyet (%)']}`]);
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 20,
+      head: [['Kategori', 'Memnuniyet Oranı']],
+      body: surveyTableData,
+      theme: 'striped',
+      headStyles: { fillColor: [5, 150, 105] }
+    });
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text('Yeşilay Kamp Yönetim Sistemi - Otomatik Verimlilik Raporu', 105, 285, { align: 'center' });
+    }
+
+    doc.save(`Verimlilik_Raporu_${activePeriod?.name || 'Genel'}.pdf`);
+    onAddLog('Verimlilik Raporu Üretildi', `${activePeriod?.name} dönemi için PDF raporu oluşturuldu.`);
+  };
+
+  const handleSendSurveySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSurveyModalOpen(false);
+    setIsSurveySent(true);
+    
+    let audName = surveyAudience === 'all' ? 'tüm katılımcılara' : surveyAudience === 'checked-out' ? 'çıkış yapan katılımcılara' : 'velilere';
+    let chName = surveyChannel === 'sms' ? 'SMS' : surveyChannel === 'email' ? 'E-posta' : surveyChannel === 'whatsapp' ? 'WhatsApp' : 'Tüm Kanallar (WhatsApp+SMS+Mail)';
+    
+    onAddLog('Anket Gönderimi', `Kapsamlı Değerlendirme Anketi ${audName} ${chName} aracılığıyla gönderildi.`);
+    setTimeout(() => setIsSurveySent(false), 4000);
+  };
+
+  const handleCopyPeriodLink = (periodId: string) => {
+    const regLink = `${window.location.origin}${window.location.pathname}?portal=basvuru&periodId=${periodId}`;
+    navigator.clipboard.writeText(regLink).then(() => {
+      setCopiedPeriodId(periodId);
+      setTimeout(() => setCopiedPeriodId(null), 2000);
+    }).catch(() => {
+      // Fallback if clipboard API fails
+      const tempInput = document.createElement('input');
+      tempInput.value = regLink;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      setCopiedPeriodId(periodId);
+      setTimeout(() => setCopiedPeriodId(null), 2000);
+    });
+    onAddLog('Başvuru Bağlantısı Kopyalandı', `Dönem ID ${periodId} için online başvuru bağlantısı kopyalandı.`);
+  };
+
+  const handleCopyLink = (centerId: string, url: string) => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedCenterId(centerId);
+      setTimeout(() => setCopiedCenterId(null), 2000);
+    }).catch(() => {
+      // Fallback if clipboard API fails in some browsers/iframes
+      const tempInput = document.createElement('input');
+      tempInput.value = url;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      setCopiedCenterId(centerId);
+      setTimeout(() => setCopiedCenterId(null), 2000);
+    });
+  };
+
+  const activeCenter = campCenters.find((c) => c.id === selectedCampCenterId) || campCenters[0];
+  const totalCapacity = activeCenter?.capacity || 78;
+  const activePeriod = periods.find((p) => p.isActive) || periods[0];
+
+  // Calculators
+  const inCampCount = participants.filter((p) => p.status === 'Kampta').length;
+  const occupancyPercent = totalCapacity > 0 ? Math.round((inCampCount / totalCapacity) * 100) : 0;
+  const pendingCount = participants.filter((p) => p.status === 'Başvuru Yapıldı').length;
+  const checkedInToday = participants.filter((p) => p.checkedIn).length;
+
+  // Age calculation groupings for visual stats bar
+  const ageDist = participants.reduce(
+    (acc, next) => {
+      const age = new Date().getFullYear() - new Date(next.birthDate).getFullYear();
+      if (age <= 12) acc['11-12']++;
+      else acc['13-14']++;
+      return acc;
+    },
+    { '11-12': 0, '13-14': 0 }
+  );
+
+  // Gender calculation groupings
+  const girlCount = participants.filter((p) => p.gender === 'Kadın').length;
+  const boyCount = participants.filter((p) => p.gender === 'Erkek').length;
+  const totalCount = participants.length || 1;
+
+  const girlPercent = Math.round((girlCount / totalCount) * 100);
+  const boyPercent = Math.round((boyCount / totalCount) * 100);
+
+  // Chart Data Setup
+  const ageData = [
+    { name: '11-12 Yaş Grubu', value: ageDist['11-12'] },
+    { name: '13-14 Yaş Grubu', value: ageDist['13-14'] },
+  ];
+  const ageColors = ['#059669', '#3b82f6'];
+
+  const occupancyData = [
+    { name: 'Dolu Kapasite', value: inCampCount },
+    { name: 'Boş Kapasite', value: Math.max(totalCapacity - inCampCount, 0) },
+  ];
+  const occupancyColors = ['#2563eb', '#e5e7eb'];
+  
+  const avgSurvey = (key: keyof SurveyResponse) => {
+    if (surveys.length === 0) return 0;
+    const sum = surveys.reduce((acc, s) => acc + (s[key] as number || 0), 0);
+    return Math.round((sum / (surveys.length * 5)) * 100);
+  };
+
+  const surveyData = surveys.length > 0 ? [
+    { name: 'Konaklama', 'Memnuniyet (%)': avgSurvey('ratingBungalows') },
+    { name: 'Yemekhane', 'Memnuniyet (%)': avgSurvey('ratingMeals') },
+    { name: 'Eğitimciler', 'Memnuniyet (%)': avgSurvey('ratingTrainers') },
+    { name: 'Etkinlik', 'Memnuniyet (%)': avgSurvey('ratingActivities') },
+  ] : [
+    { name: 'Veri Yok', 'Memnuniyet (%)': 0 }
+  ];
+
+  

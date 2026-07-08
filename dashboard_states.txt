@@ -1,0 +1,11 @@
+// New Period Form states
+  const [newPeriodName, setNewPeriodName] = useState('');
+  const [newPeriodStart, setNewPeriodStart] = useState('2026-08-01');
+  const [newPeriodEnd, setNewPeriodEnd] = useState('2026-08-08');
+  const [newPeriodQuota, setNewPeriodQuota] = useState(78);
+  const [newPeriodGender, setNewPeriodGender] = useState<'Kadın' | 'Erkek' | 'Karışık/Aile'>('Karışık/Aile');
+  const [newPeriodMinAge, setNewPeriodMinAge] = useState(11);
+  const [newPeriodMaxAge, setNewPeriodMaxAge] = useState(14);
+  const [newPeriodCriteria, setNewPeriodCriteria] = useState('');
+  
+  

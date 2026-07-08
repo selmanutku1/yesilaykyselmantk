@@ -1,0 +1,101 @@
+interface DashboardViewProps {
+  participants: Participant[];
+  periods: CampPeriod[];
+  logs: SystemLog[];
+  selectedCampCenterId: string;
+  campCenters: CampCenter[];
+  expenses: Expense[];
+  surveys: SurveyResponse[];
+  currentUser: any;
+  onAddPeriod: (p: CampPeriod) => void;
+  onUpdatePeriods: (updated: CampPeriod[]) => void;
+  onAddLog: (action: string, details: string) => void;
+  setActiveMainTab: (tab: any) => void;
+  activities: CampActivity[];
+  onUpdateActivities: (updated: CampActivity[]) => void;
+}
+
+export default function DashboardView({
+  participants,
+  periods,
+  logs,
+  selectedCampCenterId,
+  campCenters,
+  expenses,
+  surveys,
+  currentUser,
+  onAddPeriod,
+  onUpdatePeriods,
+  onAddLog,
+  setActiveMainTab,
+  activities,
+  onUpdateActivities,
+}: DashboardViewProps) {
+  // New Period Form states
+  const [newPeriodName, setNewPeriodName] = useState('');
+  const [newPeriodStart, setNewPeriodStart] = useState('2026-08-01');
+  const [newPeriodEnd, setNewPeriodEnd] = useState('2026-08-08');
+  const [newPeriodQuota, setNewPeriodQuota] = useState(78);
+  const [newPeriodGender, setNewPeriodGender] = useState<'Kadın' | 'Erkek' | 'Karışık/Aile'>('Karışık/Aile');
+  const [newPeriodMinAge, setNewPeriodMinAge] = useState(11);
+  const [newPeriodMaxAge, setNewPeriodMaxAge] = useState(14);
+  const [newPeriodCriteria, setNewPeriodCriteria] = useState('');
+  
+  const [selectedPeriodDetail, setSelectedPeriodDetail] = useState<CampPeriod | null>(null);
+  const [showPeriodParticipants, setShowPeriodParticipants] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<CampPeriod | null>(null);
+
+  const [copiedCenterId, setCopiedCenterId] = useState<string | null>(null);
+  const [copiedPeriodId, setCopiedPeriodId] = useState<string | null>(null);
+  const [showPrintWarning, setShowPrintWarning] = useState(false);
+  const [isSurveySent, setIsSurveySent] = useState(false);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [surveyType, setSurveyType] = useState('genel');
+  const [surveyAudience, setSurveyAudience] = useState('all');
+  const [surveyChannel, setSurveyChannel] = useState('sms');
+  const [isSurveyEditMode, setIsSurveyEditMode] = useState(false);
+  const [selectedParticipantDetail, setSelectedParticipantDetail] = useState<Participant | null>(null);
+
+  const [surveyTemplates, setSurveyTemplates] = useState({
+    kapsamli: 'Kamp deneyiminizi (Genel, Tesis ve Eğitim) değerlendirmek için anketimize katılın ve görüşlerinizi paylaşın:'
+  });
+
+  // Google Calendar Integration states
+  const [isGoogleCalendarModalOpen, setIsGoogleCalendarModalOpen] = useState(false);
+  const [gUser, setGUser] = useState<any>(null);
+  const [gCalendars, setGCalendars] = useState<any[]>([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState('primary');
+  const [gEvents, setGEvents] = useState<any[]>([]);
+  const [gIsLoading, setGIsLoading] = useState(false);
+  const [gError, setGError] = useState<string | null>(null);
+  const [gSuccessMsg, setGSuccessMsg] = useState<string | null>(null);
+  
+  // Custom Troubleshooting & Manual Token states
+  const [manualTokenInput, setManualTokenInput] = useState('');
+  const [showManualTokenField, setShowManualTokenField] = useState(false);
+  const [showTroubleshootPanel, setShowTroubleshootPanel] = useState(false);
+
+  // Dashboard Google Calendar sync card states
+  const [dashboardEvents, setDashboardEvents] = useState<any[]>([]);
+  const [dashboardCalendarLoading, setDashboardCalendarLoading] = useState(false);
+  const [dashboardCalendarError, setDashboardCalendarError] = useState<string | null>(null);
+
+  // Google Calendar View & Navigation states
+  const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
+  const [calendarReferenceDate, setCalendarReferenceDate] = useState<Date>(new Date('2026-06-18'));
+
+  // Manual Activity creation states
+  const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
+  const [newActTitle, setNewActTitle] = useState('');
+  const [newActType, setNewActType] = useState<'Spor' | 'Atölye' | 'Eğitim' | 'Seminer' | 'Eğlence'>('Eğitim');
+  const [newActDate, setNewActDate] = useState('2026-08-01');
+  const [newActTime, setNewActTime] = useState('09:00');
+  const [newActLocation, setNewActLocation] = useState('Kamp Alanı');
+  const [selectedDetailedEvent, setSelectedDetailedEvent] = useState<any | null>(null);
+  const [actDetailsCopied, setActDetailsCopied] = useState(false);
+  const [copiedPublicCalendarLink, setCopiedPublicCalendarLink] = useState(false);
+
+  const handleCopyPublicCalendarLink = () => {
+    const publicUrl = window.location.origin + window.location.pathname + '?view=takvim';
+    navigator.clipboard.writeText(publicUrl);
+    setCopiedPublicCalendarLink(true);

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Participant, CampPeriod, Bungalow } from '../types';
+import { Search } from 'lucide-react';
 import { 
   FileEdit, 
   Smile, 
@@ -37,6 +38,8 @@ import {
 } from 'lucide-react';
 import { exportToWord, exportToPdf } from '../utils/formExporter';
 import { HelpTooltip } from './HelpTooltip';
+import SignaturePad from './SignaturePad';
+import LegalDocumentBox from './LegalDocumentBox';
 
 const CITY_DISTRICT_MAP: Record<string, string[]> = {
   'Adana': ['Seyhan', 'Yüreğir', 'Çukurova', 'Sarıçam', 'Ceyhan', 'Kozan', 'İmamoğlu', 'Karataş', 'Pozantı', 'Feke'],
@@ -144,6 +147,7 @@ export default function RegistrationView({
   onChangeSubView,
 }: RegistrationViewProps) {
   const [copiedLink, setCopiedLink] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // URL Parameter Detection
   const params = new URLSearchParams(window.location.search);
@@ -187,6 +191,7 @@ export default function RegistrationView({
 
   const [kvkkChecked, setKvkkChecked] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
 
   // 2. Convoy Form State
   const [convoyName, setConvoyName] = useState('');
@@ -675,7 +680,17 @@ export default function RegistrationView({
   // List only applicants with status "Başvuru Yapıldı" or "Yedek Listede" who belong to a convoy/institution
   const applications = participants.filter(
     (p) => (p.status === 'Başvuru Yapıldı' || p.status === 'Yedek Listede') && p.convoyName && p.convoyName.trim() !== ''
-  );
+  ).filter(p => {
+    if (searchTerm.trim() === '') return true;
+    const s = searchTerm.toLowerCase();
+    return p.name.toLowerCase().includes(s) || 
+      p.identityNumber.includes(s) ||
+      p.convoyName?.toLowerCase().includes(s) ||
+      p.city?.toLowerCase().includes(s) ||
+      p.district?.toLowerCase().includes(s) ||
+      p.duty?.toLowerCase().includes(s) ||
+      p.phone?.includes(s);
+  });
 
   // Calculate bounds for date inputs based on period's age limits
   const getDateBounds = (periodId: string) => {
@@ -986,6 +1001,7 @@ export default function RegistrationView({
     setWeight('');
     setKvkkChecked(false);
     setConsentChecked(false);
+    setSignatureData(null);
     setAutoAllocate(true);
     setPreferredBungalowId('');
     setPreferredBedNumber(0);
@@ -1049,6 +1065,10 @@ export default function RegistrationView({
 
     if (!kvkkChecked || !consentChecked) {
       alert('Lütfen sözleşme ve katılım onay kutularını işaretleyiniz.');
+      return;
+    }
+    if (!signatureData) {
+      alert('Lütfen dijital muvafakatname için imza alanını doldurunuz.');
       return;
     }
 
@@ -2530,33 +2550,57 @@ export default function RegistrationView({
                 </div>
               </div>
 
-              {/* CONSENTS & CONTRACTS FOR GROUP */}
-              <div className="space-y-2 border-t pt-3 font-semibold text-gray-650">
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={kvkkChecked}
-                    onChange={(e) => setKvkkChecked(e.target.checked)}
-                    className="accent-emerald-700 mt-0.5"
-                    required
-                  />
-                  <span className="text-[10px]">
-                    <strong>Kafile Sorumluluk Beyanı &amp; KVKK Onayı:</strong> Sorumlusu olduğum kafiledeki tüm katılımcı velilerinin muvafakat belgelerini elden teslim aldığımı ve sağlık/kimlik verilerinin sistemde güvenli işlenmesini onayladığımı taahhüt ederim.
-                  </span>
-                </label>
+                            {/* CONSENTS & CONTRACTS FOR GROUP */}
+              <div className="space-y-4 border-t pt-4 font-semibold text-gray-650 mb-4">
+                <LegalDocumentBox 
+                  title="KVKK Onay ve Aydınlatma Metni"
+                  label="Tüm KVKK aydınlatma metnini okudum, kişisel ve özel nitelikli verilerimin işlenmesini kabul ediyorum."
+                  checked={kvkkChecked}
+                  onChange={setKvkkChecked}
+                  content={
+                    <>
+                      <h4 className="font-black text-center text-gray-900 mb-2">T.C. YEŞİLAY CEMİYETİ<br/>YAYLAGÖL ULUSLARARASI KAMP MERKEZİ<br/>KİŞİSEL VERİLERİN KORUNMASI AYDINLATMA METNİ</h4>
+                      <p className="mb-2"><strong>Başvuru Sahibi / Kafile Sorumlusu:</strong> {leaderName || "..................................................."}</p>
+                      <p className="mb-2"><strong>T.C. Kimlik No:</strong> {leaderTc || "..................."}</p>
+                      <p className="mt-4">6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, Türkiye Yeşilay Cemiyeti Yaylagöl Uluslararası Kamp Merkezi olarak, kamp kaydınız ve konaklamanız kapsamında elde ettiğimiz kişisel verilerinizi yetkili servis sağlayıcılarımız vasıtasıyla işliyoruz.</p>
+                      <p className="mt-2"><strong>1. İşlenen Kişisel Veriler:</strong> Kimlik bilgileriniz, iletişim bilgileriniz, sağlık verileriniz (alerji, kronik rahatsızlık, kullanılan ilaçlar) ve kamp içi güvenlik/konaklama/oda atama bilgileriniz ile kafilede yer alan diğer katılımcıların verileri.</p>
+                      <p className="mt-2"><strong>2. İşlenme Amacı:</strong> Konaklama hizmetinin eksiksiz sunulması, acil tıbbi müdahale gereksinimlerinin karşılanması, kampüs güvenliğinin sağlanması ve 1774 sayılı Kimlik Bildirme Kanunu gerekliliklerinin yerine getirilmesi amacıyla işlenmektedir.</p>
+                      <p className="mt-2"><strong>3. Verilerin Aktarımı:</strong> Sağlık verileriniz sadece kamp reviri yetkilileri ve acil durumlarda sağlık personeliyle; kimlik bilgileriniz ise yasal zorunluluk kapsamında kolluk kuvvetleri ile paylaşılmaktadır.</p>
+                      <p className="mt-4 border-t border-gray-200 pt-4">İşbu aydınlatma metnini okuduğumu, şahsım ve kafilemdeki/grubumdaki kampta kalacak diğer tüm katılımcılar adına sağlık durumlarını eksiksiz bildirdiğimi, verilerimizin kamp faaliyetleri süresince işlenmesine açık rıza gösterdiğimizi kabul ederim.</p>
+                    </>
+                  }
+                />
 
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={consentChecked}
-                    onChange={(e) => setConsentChecked(e.target.checked)}
-                    className="accent-emerald-700 mt-0.5"
-                    required
-                  />
-                  <span className="text-[10px]">
-                    <strong>Kamp Katılım Taahhütnamesi:</strong> Kafilemizin tüm üyelerinin Yeşilay Kamp Kurallarına ve acil tıbbi müdahale düzenlemelerine uyacağını taahhüt ederim.
-                  </span>
-                </label>
+                <LegalDocumentBox 
+                  title="Kamp Katılım Taahhütnamesi"
+                  label="Kamp Katılım Taahhütnamesinde yer alan tüm kuralları okudum, anladım ve kabul ediyorum."
+                  checked={consentChecked}
+                  onChange={setConsentChecked}
+                  content={
+                    <>
+                      <h4 className="font-black text-center text-gray-900 mb-2">T.C. YEŞİLAY CEMİYETİ<br/>YAYLAGÖL ULUSLARARASI KAMP MERKEZİ<br/>KAMP KATILIM TAAHHÜTNAMESİ</h4>
+                      <p className="mb-2"><strong>Başvuru Sahibi / Kafile Sorumlusu:</strong> {leaderName || "..................................................."}</p>
+                      <p className="mb-4">Yaylagöl Uluslararası Kamp Merkezi'nde şahsım ve sorumluluğunu üstlendiğim kafilemdeki katılımcılar olarak konaklayacağımız süre boyunca aşağıdaki kurallara kayıtsız şartsız uyacağımızı taahhüt ederim:</p>
+                      <ul className="list-disc pl-4 space-y-2 mt-2">
+                        <li>Kamp alanına tütün, alkol, uyuşturucu madde, kesici/delici alet getirmeyeceğimizi ve kullanmayacağımızı kabul ediyoruz.</li>
+                        <li>Kamp yetkililerinin, liderlerin ve güvenlik personelinin yönlendirmelerine harfiyen uyacağımızı beyan ederiz.</li>
+                        <li>Tarafımıza tahsis edilen bungalov/çadır, yatak ve ortak alanlardaki demirbaşları koruyacağımızı, kasıtlı verilen zararları tazmin edeceğimizi kabul ederiz.</li>
+                        <li>Kamp sınırları dışına, yetkililerden izinsiz ve tek başımıza çıkmayacağımızı taahhüt ederiz.</li>
+                        <li>Revir kayıtlarında beyan ettiğimiz sağlık durumu bilgilerinin (alerji, kronik hastalık vb.) doğru olduğunu, eksik veya hatalı bilgi vermemizden kaynaklı doğacak sağlık problemlerinde sorumluluğun tarafımıza ait olduğunu kabul ederiz.</li>
+                        <li>Kamptaki diğer katılımcıların huzurunu bozacak her türlü eylemden kaçınacağımızı, kurallara uymamamız durumunda kamp idaresi tarafından kamptan ilişiğimizin kesilebileceğini kabul ve beyan ederiz.</li>
+                      </ul>
+                      <p className="mt-4 font-bold">Yukarıda yazılı bulunan kamp kurallarını kampta kalacak tüm kişiler (kafilem) adına okudum, anladım ve tüm kurallara uyacağımızı taahhüt ederim.</p>
+                    </>
+                  }
+                />
+              </div>
+              <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-3">
+                <SignaturePad onSignatureChange={setSignatureData} />
+                {signatureData && (
+                  <p className="text-3xs text-emerald-600 font-bold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> İmza Alındı
+                  </p>
+                )}
               </div>
 
               <button
@@ -2649,6 +2693,21 @@ export default function RegistrationView({
             </div>
           )}
 
+          
+          {/* SEARCH BAR */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Başvurularda ara (İsim, T.C. Kimlik No veya Kafile)..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-250 rounded-lg text-xs w-full focus:outline-none focus:border-emerald-600"
+              />
+            </div>
+          </div>
+          
           {/* GROUPED ACCORDION VIEW OF APPLICATIONS BY INSTITUTION / CONVOY */}
           {(() => {
             const groupedApps: Record<string, Participant[]> = {};

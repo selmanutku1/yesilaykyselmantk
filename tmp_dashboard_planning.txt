@@ -1,0 +1,206 @@
+2327-      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm print:hidden">
+2328-        <div className="border-b pb-3 mb-4 flex justify-between items-center flex-wrap gap-2">
+2329-          <div>
+2330-            <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+2331-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+2332:              Kamp Planlama ve Dönem Yönetimi
+2333-            </span>
+2334-            <h3 className="text-base font-bold text-gray-900 mt-0.5">
+2335-              {activePeriods.length > 0 ? activePeriods.map(p => p.name).join(', ') : 'Aktif kamp dönemi bulunmamaktadır.'}
+2336-            </h3>
+2337-          </div>
+2338-          <span className="px-3 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-100">
+2339-            Tesis Doluluğu: {inCampCount}/{totalCapacity} Dolu
+2340-          </span>
+2341-        </div>
+2342-
+2343-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+2344-          <div className="xl:col-span-2 space-y-4">
+2345-            <div className="flex justify-between items-center gap-2 flex-wrap">
+2346-              <h4 className="text-2xs font-extrabold text-gray-400 tracking-wider uppercase">Yeşilay Tematik Kamp Dönem Yönetimi</h4>
+2347-              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900 shadow-2xs">
+2348-                🔄 Dönemler Takvime Otomatik Aktarılır
+2349-              </span>
+2350-            </div>
+2351-            
+2352-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+2353-              {periods.map((per) => (
+2354-                <div
+2355-                  key={per.id}
+2356-                  onClick={() => setSelectedPeriodDetail(per)}
+2357-                  className={`p-3 rounded-lg border text-xs flex justify-between items-center transition cursor-pointer hover:shadow-sm ${
+2358-                    per.isActive 
+2359-                      ? 'border-emerald-500 bg-emerald-50/20 shadow-3xs' 
+2360-                      : 'border-gray-200 bg-gray-50/80 hover:border-emerald-300'
+2361-                  }`}
+2362-                >
+2363-                  <div>
+2364-                    <p className="font-extrabold text-gray-800 dark:text-gray-200">{per.name}</p>
+2365-                    <p className="text-3xs text-gray-500 font-semibold mt-1">
+2366-                      {new Date(per.startDate).toLocaleDateString()} - {new Date(per.endDate).toLocaleDateString()} | Kota: {per.maxQuota}
+2367-                    </p>
+2368-                    <div className="flex gap-2 mt-1">
+2369-                      {per.gender && <span className="text-[9px] px-1.5 py-0.5 bg-gray-200 rounded font-bold text-gray-600">{per.gender}</span>}
+2370-                      {per.minAge && per.maxAge && <span className="text-[9px] px-1.5 py-0.5 bg-gray-200 rounded font-bold text-gray-600">{per.minAge}-{per.maxAge} Yaş</span>}
+2371-                    </div>
+2372-                  </div>
+2373-
+2374-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+2375-                    <button
+2376-                      onClick={() => handleCopyPeriodLink(per.id)}
+2377-                      title="Bu kamp için başvuru formu bağlantısını kopyala"
+2378-                      className={`py-1 px-2 text-3xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+2379-                        copiedPeriodId === per.id
+2380-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300 animate-pulse'
+2381-                          : 'bg-white hover:bg-emerald-50 text-emerald-700 border-emerald-150'
+2382-                      }`}
+2383-                    >
+2384-                      {copiedPeriodId === per.id ? (
+2385-                        <>
+2386-                          <Check className="w-2.5 h-2.5 text-emerald-600" />
+2387-                          <span className="hidden sm:inline">Kopyalandı!</span>
+2388-                        </>
+2389-                      ) : (
+2390-                        <>
+2391-                          <Share2 className="w-2.5 h-2.5 text-emerald-600" />
+2392-                          <span className="hidden sm:inline">Link Al</span>
+2393-                        </>
+2394-                      )}
+2395-                    </button>
+2396-
+2397-                    <button
+2398-                      onClick={(e) => {
+2399-                        e.stopPropagation();
+2400-                        setEditingPeriod(per);
+2401-                      }}
+2402-                      className="bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 border border-gray-300 text-3xs font-bold px-2 py-1 rounded transition cursor-pointer"
+2403-                    >
+2404-                      Düzenle
+2405-                    </button>
+2406-                    {per.isActive ? (
+2407-                      <div className="flex items-center gap-1">
+2408-                        <span className="text-3xs font-extrabold text-emerald-700 bg-emerald-100/60 px-2.5 py-1 rounded border border-emerald-250">
+2409-                          Aktif Dönem
+2410-                        </span>
+2411-                        <button
+2412-                          onClick={(e) => {
+2413-                            e.stopPropagation();
+2414-                            handleDeactivatePeriod(per.id);
+2415-                          }}
+2416-                          className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-3xs font-bold px-2 py-1 rounded transition cursor-pointer"
+2417-                        >
+2418-                          Bitir
+2419-                        </button>
+2420-                      </div>
+2421-                    ) : per.status !== 'Tamamlandı' ? (
+2422-                      <button
+2423-                        onClick={(e) => {
+2424-                          e.stopPropagation();
+2425-                          handleActivatePeriod(per.id);
+2426-                        }}
+2427-                        className="bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 border border-gray-300 text-3xs font-bold px-2 py-1 rounded transition cursor-pointer"
+2428-                      >
+2429-                        Aktif Yap
+2430-                      </button>
+2431-                    ) : (
+2432-                      <span className="text-3xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+2433-                        Tamamlandı
+2434-                      </span>
+2435-                    )}
+2436-                  </div>
+2437-                </div>
+2438-              ))}
+2439-            </div>
+2440-          </div>
+2441-
+2442-          {/* Quick Add period panel */}
+2443-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-150 space-y-3.5 text-xs h-fit">
+2444-            <h5 className="font-bold text-gray-800 flex items-center gap-1">
+2445-              <Plus className="w-4 h-4 text-emerald-700" />
+2446-              Yeni Dönem Planla
+2447-            </h5>
+2448-            <form onSubmit={handleCreatePeriod} className="space-y-3 text-3xs">
+2449-              <div>
+2450-                <input
+2451-                  type="text"
+2452-                  placeholder="Başlık (Örn: 4. Dönem Kampı)"
+2453-                  value={newPeriodName}
+2454-                  onChange={(e) => setNewPeriodName(e.target.value)}
+2455-                  className="w-full p-2 border border-gray-200 bg-white rounded-lg focus:outline-emerald-600 font-semibold"
+2456-                  required
+2457-                />
+2458-              </div>
+2459-              <div className="grid grid-cols-2 gap-2">
+2460-                <div>
+2461-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Başlangıç</label>
+2462-                  <input
+2463-                    type="date"
+2464-                    value={newPeriodStart}
+2465-                    onChange={(e) => setNewPeriodStart(e.target.value)}
+2466-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
+2467-                  />
+2468-                </div>
+2469-                <div>
+2470-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Bitiş</label>
+2471-                  <input
+2472-                    type="date"
+2473-                    value={newPeriodEnd}
+2474-                    onChange={(e) => setNewPeriodEnd(e.target.value)}
+2475-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
+2476-                  />
+2477-                </div>
+2478-              </div>
+2479-              
+2480-              <div className="grid grid-cols-2 gap-2">
+2481-                <div>
+2482-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Kota</label>
+2483-                  <input
+2484-                    type="number"
+2485-                    value={newPeriodQuota}
+2486-                    onChange={(e) => setNewPeriodQuota(Number(e.target.value))}
+2487-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
+2488-                    min="1"
+2489-                  />
+2490-                </div>
+2491-                <div>
+2492-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Cinsiyet</label>
+2493-                  <select
+2494-                    value={newPeriodGender}
+2495-                    onChange={(e) => setNewPeriodGender(e.target.value as 'Kadın' | 'Erkek' | 'Karışık/Aile')}
+2496-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
+2497-                  >
+2498-                    <option value="Karışık/Aile">Karışık/Aile</option>
+2499-                    <option value="Kadın">Kadın</option>
+2500-                    <option value="Erkek">Erkek</option>
+2501-                  </select>
+2502-                </div>
+2503-              </div>
+2504-
+2505-              <div className="grid grid-cols-2 gap-2">
+2506-                <div>
+2507-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Min Yaş</label>
+2508-                  <input
+2509-                    type="number"
+2510-                    value={newPeriodMinAge}
+2511-                    onChange={(e) => setNewPeriodMinAge(Number(e.target.value))}
+2512-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
+2513-                    min="1"
+2514-                  />
+2515-                </div>
+2516-                <div>
+2517-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Max Yaş</label>
+2518-                  <input
+2519-                    type="number"
+2520-                    value={newPeriodMaxAge}
+2521-                    onChange={(e) => setNewPeriodMaxAge(Number(e.target.value))}
+2522-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
+2523-                    min="1"
+2524-                  />
+2525-                </div>
+2526-              </div>
+2527-              
+2528-              <div>
+2529-                <label className="block text-gray-400 mb-0.5 font-bold uppercase">Kriterler / Uyarı</label>
+2530-                <textarea
+2531-                  placeholder="Başvuru sayfasında gösterilecek uyarılar..."
+2532-                  value={newPeriodCriteria}

@@ -44,6 +44,7 @@ import {
   MapPin,
   HelpCircle
 } from 'lucide-react';
+import PeriodManagementView from './PeriodManagementView';
 import { HelpTooltip } from './HelpTooltip';
 import { signInWithGoogle, getCachedToken, logoutGoogle, auth } from '../utils/firebaseAuth';
 
@@ -630,7 +631,7 @@ export default function DashboardView({
     setIsSurveySent(true);
     
     let audName = surveyAudience === 'all' ? 'tüm katılımcılara' : surveyAudience === 'checked-out' ? 'çıkış yapan katılımcılara' : 'velilere';
-    let chName = surveyChannel === 'sms' ? 'SMS' : surveyChannel === 'email' ? 'E-posta' : 'SMS ve E-posta';
+    let chName = surveyChannel === 'sms' ? 'SMS' : surveyChannel === 'email' ? 'E-posta' : surveyChannel === 'whatsapp' ? 'WhatsApp' : 'Tüm Kanallar (WhatsApp+SMS+Mail)';
     
     onAddLog('Anket Gönderimi', `Kapsamlı Değerlendirme Anketi ${audName} ${chName} aracılığıyla gönderildi.`);
     setTimeout(() => setIsSurveySent(false), 4000);
@@ -750,7 +751,7 @@ export default function DashboardView({
       const proposedTotal = totalOverlappingQuota + targetPeriod.maxQuota;
 
       if (proposedTotal > totalCapacity) {
-        return window.confirm(`ÖNEMLİ UYARI: Bu dönemin tarihleri başka dönemlerle (${overlappingPeriods.map(p => p.name).join(', ')}) çakışmaktadır.\n\nToplam planlanan kontenjan (${proposedTotal}), kamp merkezinin kapasitesini (${totalCapacity}) aşmaktadır!\n\nBuna rağmen kaydetmek/planlamak istiyor musunuz?`);
+        return true; // confirm removed for iframe
       }
     }
     return true;
@@ -2323,229 +2324,17 @@ export default function DashboardView({
         </div>
       </div>
 
-      {/* Active Camp Period Hub */}
-      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm print:hidden">
-        <div className="border-b pb-3 mb-4 flex justify-between items-center flex-wrap gap-2">
-          <div>
-            <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              Kamp Planlama ve Dönem Yönetimi
-            </span>
-            <h3 className="text-base font-bold text-gray-900 mt-0.5">
-              {activePeriods.length > 0 ? activePeriods.map(p => p.name).join(', ') : 'Aktif kamp dönemi bulunmamaktadır.'}
-            </h3>
-          </div>
-          <span className="px-3 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-100">
-            Tesis Doluluğu: {inCampCount}/{totalCapacity} Dolu
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2 space-y-4">
-            <div className="flex justify-between items-center gap-2 flex-wrap">
-              <h4 className="text-2xs font-extrabold text-gray-400 tracking-wider uppercase">Yeşilay Tematik Kamp Dönem Yönetimi</h4>
-              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900 shadow-2xs">
-                🔄 Dönemler Takvime Otomatik Aktarılır
-              </span>
-            </div>
-            
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              {periods.map((per) => (
-                <div
-                  key={per.id}
-                  onClick={() => setSelectedPeriodDetail(per)}
-                  className={`p-3 rounded-lg border text-xs flex justify-between items-center transition cursor-pointer hover:shadow-sm ${
-                    per.isActive 
-                      ? 'border-emerald-500 bg-emerald-50/20 shadow-3xs' 
-                      : 'border-gray-200 bg-gray-50/80 hover:border-emerald-300'
-                  }`}
-                >
-                  <div>
-                    <p className="font-extrabold text-gray-800 dark:text-gray-200">{per.name}</p>
-                    <p className="text-3xs text-gray-500 font-semibold mt-1">
-                      {new Date(per.startDate).toLocaleDateString()} - {new Date(per.endDate).toLocaleDateString()} | Kota: {per.maxQuota}
-                    </p>
-                    <div className="flex gap-2 mt-1">
-                      {per.gender && <span className="text-[9px] px-1.5 py-0.5 bg-gray-200 rounded font-bold text-gray-600">{per.gender}</span>}
-                      {per.minAge && per.maxAge && <span className="text-[9px] px-1.5 py-0.5 bg-gray-200 rounded font-bold text-gray-600">{per.minAge}-{per.maxAge} Yaş</span>}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleCopyPeriodLink(per.id)}
-                      title="Bu kamp için başvuru formu bağlantısını kopyala"
-                      className={`py-1 px-2 text-3xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
-                        copiedPeriodId === per.id
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300 animate-pulse'
-                          : 'bg-white hover:bg-emerald-50 text-emerald-700 border-emerald-150'
-                      }`}
-                    >
-                      {copiedPeriodId === per.id ? (
-                        <>
-                          <Check className="w-2.5 h-2.5 text-emerald-600" />
-                          <span className="hidden sm:inline">Kopyalandı!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Share2 className="w-2.5 h-2.5 text-emerald-600" />
-                          <span className="hidden sm:inline">Link Al</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingPeriod(per);
-                      }}
-                      className="bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 border border-gray-300 text-3xs font-bold px-2 py-1 rounded transition cursor-pointer"
-                    >
-                      Düzenle
-                    </button>
-                    {per.isActive ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-3xs font-extrabold text-emerald-700 bg-emerald-100/60 px-2.5 py-1 rounded border border-emerald-250">
-                          Aktif Dönem
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeactivatePeriod(per.id);
-                          }}
-                          className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-3xs font-bold px-2 py-1 rounded transition cursor-pointer"
-                        >
-                          Bitir
-                        </button>
-                      </div>
-                    ) : per.status !== 'Tamamlandı' ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleActivatePeriod(per.id);
-                        }}
-                        className="bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 border border-gray-300 text-3xs font-bold px-2 py-1 rounded transition cursor-pointer"
-                      >
-                        Aktif Yap
-                      </button>
-                    ) : (
-                      <span className="text-3xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">
-                        Tamamlandı
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Add period panel */}
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-150 space-y-3.5 text-xs h-fit">
-            <h5 className="font-bold text-gray-800 flex items-center gap-1">
-              <Plus className="w-4 h-4 text-emerald-700" />
-              Yeni Dönem Planla
-            </h5>
-            <form onSubmit={handleCreatePeriod} className="space-y-3 text-3xs">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Başlık (Örn: 4. Dönem Kampı)"
-                  value={newPeriodName}
-                  onChange={(e) => setNewPeriodName(e.target.value)}
-                  className="w-full p-2 border border-gray-200 bg-white rounded-lg focus:outline-emerald-600 font-semibold"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Başlangıç</label>
-                  <input
-                    type="date"
-                    value={newPeriodStart}
-                    onChange={(e) => setNewPeriodStart(e.target.value)}
-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Bitiş</label>
-                  <input
-                    type="date"
-                    value={newPeriodEnd}
-                    onChange={(e) => setNewPeriodEnd(e.target.value)}
-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Kota</label>
-                  <input
-                    type="number"
-                    value={newPeriodQuota}
-                    onChange={(e) => setNewPeriodQuota(Number(e.target.value))}
-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Cinsiyet</label>
-                  <select
-                    value={newPeriodGender}
-                    onChange={(e) => setNewPeriodGender(e.target.value as 'Kadın' | 'Erkek' | 'Karışık/Aile')}
-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
-                  >
-                    <option value="Karışık/Aile">Karışık/Aile</option>
-                    <option value="Kadın">Kadın</option>
-                    <option value="Erkek">Erkek</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Min Yaş</label>
-                  <input
-                    type="number"
-                    value={newPeriodMinAge}
-                    onChange={(e) => setNewPeriodMinAge(Number(e.target.value))}
-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-0.5 font-bold uppercase">Max Yaş</label>
-                  <input
-                    type="number"
-                    value={newPeriodMaxAge}
-                    onChange={(e) => setNewPeriodMaxAge(Number(e.target.value))}
-                    className="w-full p-1.5 border border-gray-200 bg-white rounded-lg"
-                    min="1"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-gray-400 mb-0.5 font-bold uppercase">Kriterler / Uyarı</label>
-                <textarea
-                  placeholder="Başvuru sayfasında gösterilecek uyarılar..."
-                  value={newPeriodCriteria}
-                  onChange={(e) => setNewPeriodCriteria(e.target.value)}
-                  className="w-full p-2 border border-gray-200 bg-white rounded-lg focus:outline-emerald-600 font-semibold"
-                  rows={2}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 rounded-lg shadow-xs text-xs cursor-pointer transition"
-              >
-                Planla
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
+      {/* Embedded Kamp Planlama */}
+      <PeriodManagementView
+        periods={periods}
+        onAddPeriod={onAddPeriod}
+        onUpdatePeriods={onUpdatePeriods}
+        onAddLog={onAddLog}
+        campCenters={campCenters}
+        selectedCampCenterId={selectedCampCenterId}
+        participants={participants}
+        isEmbedded={true}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Quick Actions & Overview */}
@@ -3260,7 +3049,7 @@ export default function DashboardView({
               {/* Survey Preview Area */}
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800 mt-4">
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Önizleme ({surveyChannel === 'sms' ? 'SMS' : surveyChannel === 'email' ? 'E-posta' : 'SMS & E-posta'})</h4>
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Önizleme ({surveyChannel === 'sms' ? 'SMS' : surveyChannel === 'email' ? 'E-posta' : surveyChannel === 'whatsapp' ? 'WhatsApp' : 'Tüm Kanallar'})</h4>
                   {currentUser?.role === 'admin' && (
                     <button
                       type="button"

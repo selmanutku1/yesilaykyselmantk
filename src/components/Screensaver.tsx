@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Clock, ShieldCheck, Moon, ArrowRight, Sparkles, Lock, AlertCircle } from 'lucide-react';
 import { LoginUser } from '../App';
@@ -21,6 +21,7 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
   const [isUnlocking, setIsUnlocking] = useState<boolean>(false);
   const [passcode, setPasscode] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const phrases = [
     "İyi ki Yeşilay var!",
@@ -68,40 +69,6 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
     };
   }, [isUnlocking]);
 
-  // Handle physical keyboard passcode typing when unlock overlay is active
-  useEffect(() => {
-    if (!isUnlocking) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= '0' && e.key <= '9') {
-        setError('');
-        if (passcode.length < 4) {
-          const nextCode = passcode + e.key;
-          setPasscode(nextCode);
-          if (nextCode.length === 4) {
-            setTimeout(() => {
-              handleVerify(nextCode);
-            }, 150);
-          }
-        }
-      } else if (e.key === 'Backspace') {
-        setError('');
-        setPasscode(prev => prev.slice(0, -1));
-      } else if (e.key === 'Enter') {
-        handleVerify();
-      } else if (e.key === 'Escape') {
-        setIsUnlocking(false);
-        setPasscode('');
-        setError('');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isUnlocking, passcode]);
-
   const handleVerify = (codeToVerify?: string) => {
     const code = codeToVerify !== undefined ? codeToVerify : passcode;
     
@@ -119,19 +86,7 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
     } else {
       setError('Hatalı şifre! Lütfen tekrar deneyiniz.');
       setPasscode('');
-    }
-  };
-
-  const handlePinClick = (num: string) => {
-    setError('');
-    if (passcode.length < 4) {
-      const nextCode = passcode + num;
-      setPasscode(nextCode);
-      if (nextCode.length === 4) {
-        setTimeout(() => {
-          handleVerify(nextCode);
-        }, 150);
-      }
+      if (inputRef.current) inputRef.current.value = '';
     }
   };
 
@@ -333,9 +288,27 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
               </div>
 
               <p className="text-xs text-zinc-400 mb-2 font-medium">Güvenli Moddan Çıkmak İçin Şifrenizi Giriniz</p>
-
               {/* Passcode Indicator Bullets */}
-              <div className="flex justify-center gap-4 my-4">
+              <div className="flex justify-center gap-4 my-4 relative">
+                {/* Hidden Input for Mobile Keyboard & Accessibility */}
+                <input
+                  ref={inputRef}
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  autoFocus
+                  value={passcode}
+                  onChange={(e) => {
+                    setError('');
+                    const val = e.target.value.replace(/\D/g, '');
+                    setPasscode(val);
+                    if (val.length === 4) {
+                      setTimeout(() => handleVerify(val), 150);
+                    }
+                  }}
+                  className="opacity-0 absolute inset-0 w-full h-full z-10 cursor-text"
+                />
                 {[0, 1, 2, 3].map((index) => (
                   <div
                     key={index}
@@ -357,48 +330,6 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
                   </span>
                 )}
               </div>
-
-              {/* PIN Keypad */}
-              <div className="grid grid-cols-3 gap-3 max-w-[240px] mx-auto w-full">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => handlePinClick(num.toString())}
-                    className="w-14 h-14 rounded-full bg-white/5 hover:bg-white/12 active:bg-emerald-500/20 border border-white/10 hover:border-white/20 active:border-emerald-500/30 flex items-center justify-center font-black text-lg transition duration-150 cursor-pointer text-white shadow-3xs"
-                  >
-                    {num}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPasscode('');
-                    setError('');
-                  }}
-                  className="w-14 h-14 rounded-full flex items-center justify-center text-[10px] font-black tracking-widest hover:bg-white/5 text-zinc-400 hover:text-white cursor-pointer transition duration-150"
-                >
-                  TEMİZLE
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePinClick('0')}
-                  className="w-14 h-14 rounded-full bg-white/5 hover:bg-white/12 active:bg-emerald-500/20 border border-white/10 hover:border-white/20 active:border-emerald-500/30 flex items-center justify-center font-black text-lg transition duration-150 cursor-pointer text-white shadow-3xs"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError('');
-                    setPasscode(prev => prev.slice(0, -1));
-                  }}
-                  className="w-14 h-14 rounded-full flex items-center justify-center text-[10px] font-black tracking-widest hover:bg-white/5 text-zinc-400 hover:text-white cursor-pointer transition duration-150"
-                >
-                  GERİ
-                </button>
-              </div>
-
               {/* Actions & Hint */}
               <div className="mt-6 space-y-3 w-full border-t border-white/5 pt-4">
                 <button

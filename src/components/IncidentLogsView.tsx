@@ -331,8 +331,13 @@ export default function IncidentLogsView({
   };
 
   const filteredIncidents = incidents.filter(inc => {
-    const matchesSearch = inc.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          inc.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = inc.title.toLowerCase().includes(searchLower) || 
+                          inc.description.toLowerCase().includes(searchLower) ||
+                          inc.reportedBy.toLowerCase().includes(searchLower) ||
+                          inc.actionTaken?.toLowerCase().includes(searchLower) ||
+                          inc.id.toLowerCase().includes(searchLower) ||
+                          inc.type.toLowerCase().includes(searchLower);
     const matchesType = filterType === 'all' || inc.type === filterType;
     return matchesSearch && matchesType;
   });

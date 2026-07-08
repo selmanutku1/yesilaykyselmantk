@@ -1,9 +1,11 @@
+import { FileSpreadsheet, FileText } from "lucide-react";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import React, { useState } from 'react';
+import { exportToExcel, exportToPdfTable } from '../utils/exportUtils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Participant, HealthIncident } from '../types';
@@ -248,7 +250,65 @@ export default function HealthView({
     );
   };
 
+  
+  const getExportData = () => {
+    if (filteredHealthIncidents.length === 0) return null;
+    
+    const headers = [
+      "Kayıt No", "Tarih/Saat", "Ad Soyad", "T.C. Kimlik No", "Kategori",
+      "Şikayet / Teşhis", "Uygulanan Tedavi", "Verilen İlaçlar", "Gözlem/Notlar", "Durum"
+    ];
+
+    const rows = filteredHealthIncidents.map(hi => {
+      const p = participants.find(p => p.id === hi.participantId);
+      return [
+        hi.id,
+        new Date(hi.dateTime).toLocaleString(),
+        p ? p.name : 'Silinmiş Kayıt',
+        p ? p.identityNumber : '-',
+        p ? p.category : '-',
+        hi.complaint,
+        hi.treatment,
+        hi.prescription || 'Yok',
+        '',
+        hi.status
+      ];
+    });
+    
+    return { headers, rows };
+  };
+
+  const handleExportToExcel = () => {
+    const data = getExportData();
+    if (!data) {
+      alert("Dışa aktarılacak revir kaydı bulunamadı.");
+      return;
+    }
+    
+    const excelData = data.rows.map(row => {
+      let obj = {};
+      data.headers.forEach((h, i) => {
+        obj[h] = row[i];
+      });
+      return obj;
+    });
+
+    exportToExcel(excelData, 'revir_defteri');
+    onAddLog('Excel Dışa Aktarımı', 'Revir defteri kayıtları Excel formatında dışa aktarıldı.');
+  };
+
+  const handleExportToPDF = () => {
+    const data = getExportData();
+    if (!data) {
+      alert("Dışa aktarılacak revir kaydı bulunamadı.");
+      return;
+    }
+    exportToPdfTable(data.headers, data.rows, 'revir_defteri', 'Revir Defteri Kayıtları');
+    onAddLog('PDF Dışa Aktarımı', 'Revir defteri kayıtları PDF formatında dışa aktarıldı.');
+  };
+
   const handleCreateIncident = (e: React.FormEvent) => {
+
     e.preventDefault();
 
     if (!selectedPatId || !complaint || !treatment) {
@@ -433,6 +493,7 @@ export default function HealthView({
         
         {/* Left Column (8/12 - 2/3 width) - Active Revir Defteri Kayıtları */}
         <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+          
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-gray-150">
             <div className="space-y-0.5">
               <h3 className="font-extrabold text-sm text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
@@ -442,7 +503,27 @@ export default function HealthView({
               <p className="text-[10px] text-gray-400 font-semibold">Tüm tedavi, ilaç ve gözlem geçmişi kayıtları.</p>
             </div>
             
-            <div className="relative w-full sm:w-64 shrink-0">
+            
+            <div className="flex items-center gap-2">
+              <div className="flex gap-2 mr-2">
+                <button
+                  onClick={handleExportToExcel}
+                  className="px-2.5 py-1.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-2xs font-extrabold transition-all duration-150 flex items-center gap-1.5 shadow-2xs hover:border-emerald-500 cursor-pointer"
+                  title="Excel İndir"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  Excel
+                </button>
+                <button
+                  onClick={handleExportToPDF}
+                  className="px-2.5 py-1.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-2xs font-extrabold transition-all duration-150 flex items-center gap-1.5 shadow-2xs hover:border-red-500 cursor-pointer"
+                  title="PDF İndir"
+                >
+                  <FileText className="w-3.5 h-3.5 text-red-600" />
+                  PDF
+                </button>
+              </div>
+<div className="relative w-full sm:w-64 shrink-0">
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -451,6 +532,7 @@ export default function HealthView({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-150 rounded-xl text-xs focus:bg-white focus:border-emerald-600 outline-none transition font-semibold"
               />
+            </div>
             </div>
           </div>
 

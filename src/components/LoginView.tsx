@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Shield, 
   Building2, 
@@ -28,6 +28,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingUser, setPendingUser] = useState<LoginUser | null>(null);
   const [passcode, setPasscode] = useState('');
+  const passcodeRef = useRef<HTMLInputElement>(null);
   const [passcodeError, setPasscodeError] = useState('');
 
   const getRoleIcon = (role: string) => {
@@ -397,10 +398,10 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
               <div className="space-y-1">
                 <label className="text-4xs text-gray-400 font-black uppercase tracking-wider block">Geçiş Kodu</label>
                 <input
+                  ref={passcodeRef}
                   type="password"
                   maxLength={4}
                   placeholder="••••"
-                  value={passcode}
                   onChange={(e) => {
                     setPasscode(e.target.value);
                     setPasscodeError('');
@@ -420,6 +421,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
                     setPendingUser(null);
                     setPasscode('');
                     setPasscodeError('');
+                    if (passcodeRef.current) passcodeRef.current.value = '';
                   }}
                   className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition cursor-pointer"
                 >

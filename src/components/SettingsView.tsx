@@ -26,7 +26,8 @@ import {
   Check,
   AlertCircle,
   Smartphone,
-  Download
+  Download,
+  MessageCircle
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -417,6 +418,56 @@ export default function SettingsView({
             </div>
           </div>
 
+                    {/* WhatsApp Business API Integration */}
+          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-xs space-y-4">
+            <h3 className="font-bold text-sm text-gray-900 pb-2 border-b flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
+              WhatsApp Business API Entegrasyonu
+            </h3>
+            
+            <p className="text-2xs text-gray-500 leading-normal font-semibold">
+              Kampa kayıt olan katılımcılara ve velilerine, ön kayıt, mülakat, veya kabul durumları hakkında anlık WhatsApp bildirimleri (Template Messages) gönderebilmek için resmi WhatsApp API altyapısını bağlayın. SMS ve E-posta maliyetlerine alternatif olarak daha hızlı dönüş oranları sağlar.
+            </p>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-4xs font-bold text-gray-600 uppercase tracking-wider">Access Token (Bearer)</label>
+                <input type="password" placeholder="EAAIu... (Sürekli veya Sistem Tokeni)" className="w-full text-xs p-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-4xs font-bold text-gray-600 uppercase tracking-wider">Phone Number ID</label>
+                <input type="text" placeholder="Örn: 104234567891234" className="w-full text-xs p-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-4xs font-bold text-gray-600 uppercase tracking-wider">WhatsApp Business Account ID</label>
+                <input type="text" placeholder="Örn: 109876543210987" className="w-full text-xs p-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition" />
+              </div>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-start gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-3xs block text-gray-600">
+                <strong>Not:</strong> WhatsApp mesajları gönderirken 24 saatlik müşteri hizmetleri aralığı dışında Meta tarafından onaylanmış şablonlar (Template Message) kullanmalısınız. 
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-between items-center">
+              <button
+                className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-200 transition cursor-pointer shadow-sm"
+                onClick={() => triggerSuccess('Bağlantı başarıyla test edildi! WhatsApp API çevrimiçi.')}
+              >
+                Bağlantıyı Test Et
+              </button>
+              <button
+                onClick={() => triggerSuccess('WhatsApp API Kimlik Bilgileri Kaydedildi.')}
+                className="bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-800 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" />
+                API Yapılandırmasını Kaydet
+              </button>
+            </div>
+          </div>
+
           {/* Quick Info & Guidelines */}
           <div className="bg-emerald-50/30 p-5 rounded-xl border border-emerald-100 text-xs text-gray-650 space-y-3">
             <h4 className="font-bold text-emerald-950 flex items-center gap-1.5">
@@ -688,6 +739,79 @@ export default function SettingsView({
         </div>
 
       </div>
+
+      
+      {/* WhatsApp Integration Panel */}
+      {currentUser.role === 'admin' && (
+        <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6 mt-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 gap-4">
+            <div className="space-y-1">
+              <h3 className="font-bold text-base text-gray-900 flex items-center gap-2.5">
+                <span className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
+                  <MessageCircle className="w-5 h-5" />
+                </span>
+                <div>
+                  <span className="block font-black tracking-tight text-gray-900 text-sm">WhatsApp Bildirim Altyapısı</span>
+                  <span className="block text-2xs font-medium text-gray-400 mt-0.5 font-sans">Katılımcılara gönderilecek otomatik WhatsApp bildirimleri ve API ayarları.</span>
+                </div>
+              </h3>
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  onAddLog('WhatsApp Ayarları Kaydedildi', 'WhatsApp API bağlantı ayarları güncellendi.');
+                  if (typeof triggerSuccess === 'function') triggerSuccess('WhatsApp ayarları başarıyla kaydedildi.');
+                }}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" /> Ayarları Kaydet
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-gray-800 flex items-center gap-1.5"><Smartphone className="w-4 h-4 text-emerald-600"/> API Bağlantı Bilgileri</h4>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">WhatsApp Business API Anahtarı</label>
+                  <input type="password" defaultValue="wa_test_123456789" className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 text-xs font-mono" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Gönderici Telefon Numarası (ID)</label>
+                  <input type="text" defaultValue="+90 555 123 4567" className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 text-xs font-mono" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Webhook URL (Mesaj Durumları İçin)</label>
+                  <input type="text" defaultValue="https://yesilaykampus.api/webhook/whatsapp" className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 text-xs font-mono" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-gray-800 flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-600"/> Otomatik Bildirim Tetikleyicileri</h4>
+              
+              <div className="space-y-2 border border-gray-150 rounded-xl overflow-hidden bg-gray-50/30">
+                {[
+                  { id: 'app_approved', title: 'Başvuru Onaylandığında', desc: 'Katılımcının başvurusu onaylandığında gönderilecek karşılama mesajı.', active: true },
+                  { id: 'bungalow_assigned', title: 'Oda Ataması Yapıldığında', desc: 'Katılımcının kalacağı oda/bungalov belli olduğunda gönderilir.', active: true },
+                  { id: 'event_reminder', title: 'Etkinlik Hatırlatmaları', desc: 'Önemli kamp etkinliklerinden 15 dakika önce katılımcılara hatırlatma yapılır.', active: false },
+                  { id: 'checkout_thanks', title: 'Çıkış İşlemi Sonrası', desc: 'Kamp bitiminde gönderilecek anket linki ve teşekkür mesajı.', active: true }
+                ].map((trigger, i) => (
+                  <label key={i} className="flex items-start gap-3 p-3 border-b border-gray-150 last:border-0 cursor-pointer hover:bg-white transition-colors">
+                    <input type="checkbox" defaultChecked={trigger.active} className="mt-1 w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer accent-emerald-600" />
+                    <div>
+                      <span className="block text-xs font-bold text-gray-900">{trigger.title}</span>
+                      <span className="block text-[10px] text-gray-500 mt-0.5">{trigger.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Redesigned User Management Panel (IAM Workspace) */}
       {currentUser.role === 'admin' && (

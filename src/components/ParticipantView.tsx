@@ -1,9 +1,11 @@
+import { exportToExcel, exportToPdfTable } from "../utils/exportUtils";
+import { generateWhatsAppLink, sendWhatsAppNotification } from '../utils/whatsappService';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { MessageCircle, useState, useEffect, useMemo } from "react";
 import { Participant, Group, CampPeriod } from "../types";
 import {
   Users,
@@ -15,7 +17,7 @@ import {
   Heart,
   UserSquare2,
   X,
-  FileSpreadsheet,
+  FileSpreadsheet, FileText,
   TrendingUp,
   Printer,
   FileDown,
@@ -73,10 +75,12 @@ export default function ParticipantView({
   const [evaluationScore, setEvaluationScore] = useState<number>(85);
   const [evaluationNotes, setEvaluationNotes] = useState<string>("");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // SMS & E-posta Bilgilendirme States
-  const [notifyMethod, setNotifyMethod] = useState<"both" | "sms" | "email">(
-    "both",
+  const [notifyMethod, setNotifyMethod] = useState<"all" | "whatsapp" | "sms" | "email">(
+    "whatsapp",
   );
   const [notifyTemplate, setNotifyTemplate] = useState<string>("welcome");
   const [customMessage, setCustomMessage] = useState<string>("");
@@ -122,10 +126,13 @@ export default function ParticipantView({
     }
 
     const destinations: string[] = [];
-    if (notifyMethod === "both" || notifyMethod === "sms") {
+    if (notifyMethod === "all" || notifyMethod === "sms") {
       destinations.push(`SMS (${selectedParticipant.phone || "Gsm Yok"})`);
     }
-    if (notifyMethod === "both" || notifyMethod === "email") {
+    if (notifyMethod === "all" || notifyMethod === "whatsapp") {
+      destinations.push(`WhatsApp (${selectedParticipant.phone || "Gsm Yok"})`);
+    }
+    if (notifyMethod === "all" || notifyMethod === "email") {
       destinations.push(`E-Posta (${selectedParticipant.email || "Mail Yok"})`);
     }
 
@@ -383,32 +390,21 @@ export default function ParticipantView({
     );
   };
 
-  const handleExportToCSV = () => {
-    if (filteredParticipants.length === 0) {
-      alert("Dışa aktarılacak katılımcı bulunamadı.");
-      return;
-    }
-
+  
+  const getExportData = () => {
+    if (filteredParticipants.length === 0) return null;
+    
     const headers = [
-      "T.C. Kimlik No",
-      "Ad Soyad",
-      "Kategori",
-      "Cinsiyet",
-      "Doğum Tarihi",
-      "Telefon",
-      "E-Posta",
-      "Kamp Dönemi",
-      "Grup Adı",
-      "Bungalov No",
-      "Yatak No",
-      "Alerjiler",
-      "Sağlık Notu",
-      "Kayıt Durumu"
+      "T.C. Kimlik No", "Ad Soyad", "Kategori", "Cinsiyet", "Doğum Tarihi", 
+      "Telefon", "E-Posta", "Kamp Dönemi", "Grup Adı", "Bungalov No", 
+      "Yatak No", "Alerjiler", "Sağlık Notu", "Kayıt Durumu"
     ];
 
     const rows = filteredParticipants.map(p => {
       const periodName = periods.find((per) => per.id === p.campPeriodId)?.name || p.campPeriodId || 'Belirtilmedi';
       const groupName = groups.find((g) => g.id === p.groupId)?.name || 'Atanmadı';
+      const bungalowName = p.bungalowId ? p.bungalowId : 'Atanmadı';
+
       return [
         p.identityNumber || '',
         p.name || '',
@@ -419,43 +415,57 @@ export default function ParticipantView({
         p.email || '',
         periodName,
         groupName,
-        p.bungalowId || 'Atanmadı',
-        p.bedNumber || 'Atanmadı',
-        p.allergies || 'Yok',
-        p.healthNote || 'Yok',
+        bungalowName,
+        p.bedNumber ? p.bedNumber.toString() : 'Atanmadı',
+        p.allergies || '',
+        p.healthNote || '',
         p.status || ''
       ];
     });
-
-    // Generate CSV Content with Semicolon and BOM for full Turkish Excel compatibility
-    const csvContent = "\uFEFF" + [
-      headers.join(";"),
-      ...rows.map(row => row.map(val => {
-        const cleanVal = String(val).replace(/"/g, '""').replace(/;/g, ',');
-        return cleanVal.includes(',') || cleanVal.includes('"') || cleanVal.includes('\n') ? `"${cleanVal}"` : cleanVal;
-      }).join(";"))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `yesilay_katilimci_listesi_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    onAddLog(
-      "CSV Dışa Aktarımı",
-      `${filteredParticipants.length} katılımcının listesi yerel cihaza CSV formatında aktarıldı.`
-    );
+    
+    return { headers, rows };
   };
 
+  const handleExportToExcel = () => {
+    const data = getExportData();
+    if (!data) {
+      alert("Dışa aktarılacak katılımcı bulunamadı.");
+      return;
+    }
+    
+    const excelData = data.rows.map(row => {
+      let obj = {};
+      data.headers.forEach((h, i) => {
+        obj[h] = row[i];
+      });
+      return obj;
+    });
+
+    exportToExcel(excelData, 'katilimci_listesi');
+    onAddLog('Excel Dışa Aktarımı', 'Katılımcı listesi Excel formatında dışa aktarıldı.');
+  };
+
+  const handleExportToPDF = () => {
+    const data = getExportData();
+    if (!data) {
+      alert("Dışa aktarılacak katılımcı bulunamadı.");
+      return;
+    }
+    exportToPdfTable(data.headers, data.rows, 'katilimci_listesi', 'Katılımcı Listesi');
+    onAddLog('PDF Dışa Aktarımı', 'Katılımcı listesi PDF formatında dışa aktarıldı.');
+  };
+
+
   const filteredParticipants = participants.filter((p) => {
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.identityNumber.includes(searchTerm);
+      p.name.toLowerCase().includes(searchLower) ||
+      p.identityNumber.includes(searchTerm) ||
+      (p.city && p.city.toLowerCase().includes(searchLower)) ||
+      (p.district && p.district.toLowerCase().includes(searchLower)) ||
+      (p.convoyName && p.convoyName.toLowerCase().includes(searchLower)) ||
+      (p.duty && p.duty.toLowerCase().includes(searchLower)) ||
+      (p.phone && p.phone.includes(searchTerm));
     const matchesStatus = statusFilter === "All" || p.status === statusFilter;
     const matchesGender = genderFilter === "All" || p.gender === genderFilter;
     const matchesCategory =
@@ -483,6 +493,13 @@ export default function ParticipantView({
       matchesPeriod
     );
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, genderFilter, categoryFilter, attendanceTypeFilter, periodFilter, participants.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredParticipants.length / itemsPerPage));
+  const paginatedParticipants = filteredParticipants.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const selectedParticipant = participants.find(
     (p) => p.id === selectedParticipantId,
@@ -1227,6 +1244,21 @@ export default function ParticipantView({
     }, 250);
   };
 
+  
+  const handleSendWhatsApp = async (p: Participant) => {
+    if (!p.phone) {
+      alert('Katılımcının telefon numarası bulunmuyor.');
+      return;
+    }
+    const message = `Merhaba ${p.name}, Yeşilay Kampı bilgilendirme servisinden ulaşıyoruz.`;
+    
+    // Açık olan modal/drawer varsa bunu kapatmıyoruz, sadece linki yeni sekmede açıyoruz.
+    const waLink = generateWhatsAppLink(p.phone, message);
+    window.open(waLink, '_blank');
+    
+    onAddLog('WhatsApp Mesajı', `${p.name} adlı katılımcıya (${p.phone}) WhatsApp üzerinden manuel mesaj gönderildi.`);
+  };
+
   const handleGenerateCertificate = (pId: string) => {
     const updated = participants.map((p) => {
       if (p.id === pId) {
@@ -1334,15 +1366,25 @@ export default function ParticipantView({
               </button>
             </div>
 
-            {/* CSV Dışa Aktar Button */}
-            <button
-              onClick={handleExportToCSV}
-              className="px-3 py-1.5 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg text-2xs font-extrabold transition-all duration-150 flex items-center gap-1.5 shadow-2xs cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500"
-              title="Katılımcı Listesini Excel/CSV Olarak İndir"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Dışa Aktar
-            </button>
+                        {/* Export Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportToExcel}
+                className="px-3 py-1.5 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg text-2xs font-extrabold transition-all duration-150 flex items-center gap-1.5 shadow-2xs cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500"
+                title="Excel İndir"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Excel
+              </button>
+              <button
+                onClick={handleExportToPDF}
+                className="px-3 py-1.5 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg text-2xs font-extrabold transition-all duration-150 flex items-center gap-1.5 shadow-2xs cursor-pointer hover:border-red-500 dark:hover:border-red-500"
+                title="PDF İndir"
+              >
+                <FileText className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                PDF
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1534,16 +1576,15 @@ export default function ParticipantView({
                             onChange={(e) => {
                               if (e.target.checked) {
                                 setSelectedForBulk(
-                                  filteredParticipants.map((p) => p.id),
+                                  paginatedParticipants.map((p) => p.id),
                                 );
                               } else {
                                 setSelectedForBulk([]);
                               }
                             }}
                             checked={
-                              filteredParticipants.length > 0 &&
-                              selectedForBulk.length ===
-                                filteredParticipants.length
+                              paginatedParticipants.length > 0 &&
+                              paginatedParticipants.every(p => selectedForBulk.includes(p.id))
                             }
                             className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"
                           />
@@ -1557,7 +1598,7 @@ export default function ParticipantView({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {filteredParticipants.map((p) => {
+                      {paginatedParticipants.map((p) => {
                         const pPeriod = periods.find(
                           (per) => per.id === p.campPeriodId,
                         );
@@ -1714,8 +1755,8 @@ export default function ParticipantView({
                   </table>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredParticipants.map((p) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                  {paginatedParticipants.map((p) => {
                     const pPeriod = periods.find(
                       (per) => per.id === p.campPeriodId,
                     );
@@ -1834,6 +1875,60 @@ export default function ParticipantView({
                   })}
                 </div>
               )}
+              
+              {filteredParticipants.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 bg-white p-4 rounded-xl border border-gray-150 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-gray-500 font-semibold">
+                      Toplam <span className="font-extrabold text-gray-900">{filteredParticipants.length}</span> kayıttan <span className="font-extrabold text-gray-900">{filteredParticipants.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> - <span className="font-extrabold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredParticipants.length)}</span> arası gösteriliyor.
+                    </div>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="text-xs border border-gray-200 rounded p-1 bg-gray-50 text-gray-700 outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value={10}>10 satır</option>
+                      <option value={15}>15 satır</option>
+                      <option value={20}>20 satır</option>
+                      <option value={50}>50 satır</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Önceki
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                            currentPage === page
+                              ? 'bg-emerald-600 text-white'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Sonraki
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1930,9 +2025,20 @@ export default function ParticipantView({
                     <span className="block text-[10px] text-gray-400 font-semibold mb-0.5">
                       Telefon Numarası
                     </span>
-                    <span className="font-bold text-gray-800">
-                      {selectedParticipant.phone || "Belirtilmedi"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-800">
+                        {selectedParticipant.phone || "Belirtilmedi"}
+                      </span>
+                      {selectedParticipant.phone && (
+                        <button
+                          onClick={() => handleSendWhatsApp(selectedParticipant)}
+                          className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 p-1 rounded-md transition-colors"
+                          title="WhatsApp'tan Mesaj Gönder"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <span className="block text-[10px] text-gray-400 font-semibold mb-0.5">
@@ -1981,27 +2087,34 @@ export default function ParticipantView({
                   Servisi
                 </h4>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     <button
                       type="button"
-                      onClick={() => setNotifyMethod("both")}
-                      className={`py-1.5 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "both" ? "border-blue-500 bg-blue-50 text-blue-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
+                      onClick={() => setNotifyMethod("all")}
+                      className={`py-1.5 px-1 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "all" ? "border-blue-500 bg-blue-50 text-blue-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
                     >
-                      Her İkisi
+                      Tümü
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNotifyMethod("whatsapp")}
+                      className={`py-1.5 px-1 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "whatsapp" ? "border-emerald-500 bg-emerald-50 text-emerald-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
+                    >
+                      WhatsApp
                     </button>
                     <button
                       type="button"
                       onClick={() => setNotifyMethod("sms")}
-                      className={`py-1.5 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "sms" ? "border-blue-500 bg-blue-50 text-blue-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
+                      className={`py-1.5 px-1 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "sms" ? "border-blue-500 bg-blue-50 text-blue-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
                     >
-                      Sadece SMS
+                      SMS
                     </button>
                     <button
                       type="button"
                       onClick={() => setNotifyMethod("email")}
-                      className={`py-1.5 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "email" ? "border-blue-500 bg-blue-50 text-blue-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
+                      className={`py-1.5 px-1 text-[10px] rounded-lg border font-black transition cursor-pointer text-center ${notifyMethod === "email" ? "border-blue-500 bg-blue-50 text-blue-900 shadow-3xs" : "border-gray-200 hover:border-gray-300 text-gray-500 bg-white"}`}
                     >
-                      Sadece Mail
+                      E-Posta
                     </button>
                   </div>
                   <div className="space-y-1.5">
