@@ -1,28 +1,8 @@
 const fs = require('fs');
 let content = fs.readFileSync('src/App.tsx', 'utf8');
 
-// fix handleActiveTabChange signature
-content = content.replace(
-  "const handleActiveTabChange = (tab: 'dashboard' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {",
-  "const handleActiveTabChange = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {"
-);
+const targetStr = '<span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-[#00875A] dark:text-emerald-100 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide">Kamp Yönetim Sistemi (KYS)</span>';
+const replStr = '<span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-[#00875A] dark:text-emerald-100 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1.5">Kamp Yönetim Sistemi (KYS) <span className="text-[9px] bg-indigo-500 text-white font-black px-1.5 py-0.5 rounded border border-indigo-600">BETA</span></span>';
 
-// fix PeriodManagement props
-content = content.replace(
-  "campCenters={CAMP_CENTERS}",
-  "campCenters={campCenters}"
-);
-content = content.replace(
-  "selectedCampCenterId={selectedCampCenterId}",
-  "selectedCampCenterId={selectedCenterId}"
-);
-content = content.replace(
-  "onAddPeriod={(p) => setPeriods([...periods, p])}",
-  "onAddPeriod={handleAddPeriod}"
-);
-content = content.replace(
-  "onUpdatePeriods={setPeriods}",
-  "onUpdatePeriods={updatePeriods}"
-);
-
+content = content.replace(targetStr, replStr);
 fs.writeFileSync('src/App.tsx', content);

@@ -414,7 +414,10 @@ export default function IncidentLogsView({
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <label className="text-xs font-bold text-gray-600">Olayın Detayları</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold text-gray-600">Olayın Detayları</label>
+                <VoiceNoteButton onTranscript={(t) => setNewDescription(prev => prev ? prev + ' ' + t : t)} />
+              </div>
               <textarea
                 placeholder="Neler yaşandı? Kimler dahil oldu?"
                 value={newDescription}
@@ -423,7 +426,10 @@ export default function IncidentLogsView({
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <label className="text-xs font-bold text-gray-600">Alınan Aksiyon (Varsa)</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold text-gray-600">Alınan Aksiyon (Varsa)</label>
+                <VoiceNoteButton onTranscript={(t) => setNewActionTaken(prev => prev ? prev + ' ' + t : t)} />
+              </div>
               <input
                 type="text"
                 placeholder="Örn: Tutanak tutuldu, sözlü uyarı yapıldı"

@@ -42,7 +42,9 @@ import {
   AlertTriangle,
   Clock,
   MapPin,
-  HelpCircle
+  HelpCircle,
+  Mic,
+  Sparkles
 } from 'lucide-react';
 import PeriodManagementView from './PeriodManagementView';
 import { HelpTooltip } from './HelpTooltip';

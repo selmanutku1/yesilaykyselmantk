@@ -4,6 +4,7 @@ import {
   MapPin, CheckCircle, Clock, AlertTriangle, AlertCircle, Phone, Smartphone 
 } from 'lucide-react';
 import { Task, ShiftAssignment, TechnicalIssue, SupplyRequest } from '../types';
+import VoiceNoteButton from './VoiceNoteButton';
 
 interface TechnicalOperationsViewProps {
   selectedCenterId: string;
@@ -21,10 +22,17 @@ export default function TechnicalOperationsView({
   tasks,
   shifts,
   onUpdateTasks,
+  onUpdateShifts,
+  onAddLog,
   activeSubView = 'dashboard',
   onChangeSubView
 }: TechnicalOperationsViewProps) {
   const [activeTab, setActiveTab] = useState(activeSubView);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<'Normal' | 'Acil' | 'Kritik'>('Normal');
+  const [newTaskDepartment, setNewTaskDepartment] = useState('Teknik');
 
   // Sync prop to state if it changes externally
   React.useEffect(() => {
@@ -41,6 +49,38 @@ export default function TechnicalOperationsView({
   const techTasks = tasks.filter(t => t.department === 'Teknik');
   const pendingTasks = techTasks.filter(t => t.status !== 'Tamamlandı');
   const completedTasks = techTasks.filter(t => t.status === 'Tamamlandı');
+
+  const handleUpdateStatus = (taskId: string, newStatus: string) => {
+    onUpdateTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    onAddLog('Teknik Görev', taskId + ' numaralı görev ' + newStatus + ' olarak işaretlendi.');
+  };
+  
+  const handleDeleteTask = (taskId: string) => {
+    if(confirm('Bu görevi silmek istediğinize emin misiniz?')) {
+       onUpdateTasks(tasks.filter(t => t.id !== taskId));
+       onAddLog('Teknik Görev', taskId + ' numaralı görev silindi.');
+    }
+  };
+
+  const handleAddTask = () => {
+    if (!newTaskTitle.trim() || !newTaskDesc.trim()) return;
+    const newTask = {
+      id: 'TSK-' + Math.floor(Math.random() * 10000),
+      title: newTaskTitle,
+      description: newTaskDesc,
+      status: 'Bekliyor',
+      priority: newTaskPriority,
+      department: newTaskDepartment,
+      assignedTo: 'Atanmadı',
+      dueDate: new Date().toISOString().split('T')[0]
+    };
+    onUpdateTasks([...tasks, newTask as Task]);
+    onAddLog('Yeni Görev', newTaskTitle + ' görevi oluşturuldu.');
+    setShowAddForm(false);
+    setNewTaskTitle('');
+    setNewTaskDesc('');
+    setNewTaskPriority('Normal');
+  };
 
   const renderDashboard = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -84,19 +124,76 @@ export default function TechnicalOperationsView({
           </button>
         </div>
         <div className="divide-y divide-gray-100">
+        {showAddForm && (
+          <div className="p-5 bg-gray-50 border-b border-gray-100 space-y-4">
+            <h4 className="font-bold text-sm text-gray-800">Yeni Arıza / Görev Bildir</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Başlık</label>
+                <input 
+                  type="text" 
+                  value={newTaskTitle} 
+                  onChange={e => setNewTaskTitle(e.target.value)} 
+                  placeholder="Örn: Elektrik Kesintisi" 
+                  className="w-full p-2 border rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Öncelik</label>
+                <select 
+                  value={newTaskPriority} 
+                  onChange={e => setNewTaskPriority(e.target.value as any)} 
+                  className="w-full p-2 border rounded-lg text-sm"
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Acil">Acil</option>
+                  <option value="Kritik">Kritik</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-bold text-gray-600">Açıklama / Detay</label>
+                  <VoiceNoteButton onTranscript={(t) => setNewTaskDesc(prev => prev ? prev + ' ' + t : t)} />
+                </div>
+                <textarea 
+                  value={newTaskDesc} 
+                  onChange={e => setNewTaskDesc(e.target.value)} 
+                  placeholder="Arıza detayı ve nerede olduğu..." 
+                  className="w-full p-2 border rounded-lg text-sm h-20"
+                ></textarea>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button 
+                onClick={handleAddTask}
+                disabled={!newTaskTitle.trim() || !newTaskDesc.trim()}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm py-2 px-6 rounded-lg transition"
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        )}
           {techTasks.slice(0, 5).map(task => (
             <div key={task.id} className="p-4 hover:bg-gray-50 flex justify-between items-center transition">
               <div>
                 <p className="font-bold text-gray-900 text-sm">{task.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
               </div>
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                task.status === 'Tamamlandı' ? 'bg-emerald-50 text-emerald-700' :
-                task.status === 'Devam Ediyor' ? 'bg-amber-50 text-amber-700' :
-                'bg-gray-100 text-gray-600'
-              }`}>
-                {task.status}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  task.status === 'Tamamlandı' ? 'bg-emerald-50 text-emerald-700' :
+                  task.status === 'Devam Ediyor' ? 'bg-amber-50 text-amber-700' :
+                  'bg-gray-100 text-gray-600'
+                }`}>
+                  {task.status}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleUpdateStatus(task.id, 'Devam Ediyor')} className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Müdahale Et</button>
+                  <button onClick={() => handleUpdateStatus(task.id, 'Tamamlandı')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">Tamamla</button>
+                  <button onClick={() => handleDeleteTask(task.id)} className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer">Sil</button>
+                </div>
+              </div>
             </div>
           ))}
           {techTasks.length === 0 && (
@@ -109,6 +206,131 @@ export default function TechnicalOperationsView({
     </div>
   );
 
+    const [newRequestTitle, setNewRequestTitle] = useState('');
+  const [newRequestType, setNewRequestType] = useState('Malzeme');
+  const [newRequestPriority, setNewRequestPriority] = useState('Normal');
+  const [showRequestForm, setShowRequestForm] = useState(false);
+
+  const handleAddRequest = () => {
+    if (!newRequestTitle.trim()) return;
+    const newTask = {
+      id: 'REQ-' + Math.floor(Math.random() * 10000),
+      title: newRequestTitle,
+      description: newRequestType + ' Talebi',
+      status: 'Bekliyor',
+      priority: newRequestPriority,
+      department: 'Satın Alma',
+      assignedTo: 'Atanmadı',
+      dueDate: new Date().toISOString().split('T')[0]
+    };
+    onUpdateTasks([...tasks, newTask as any]);
+    onAddLog('Yeni Talep', newRequestTitle + ' talebi oluşturuldu.');
+    setShowRequestForm(false);
+    setNewRequestTitle('');
+  };
+
+  const renderRequests = () => {
+    const requestTasks = tasks.filter(t => t.department === 'Satın Alma' || t.id.startsWith('REQ-'));
+    return (
+      <div className="bg-white border border-gray-150 rounded-2xl shadow-xs overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div>
+            <h3 className="font-extrabold text-gray-800 text-sm">Malzeme ve Satın Alma Talepleri</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Tesis ihtiyaçları ve sarf malzeme istekleri.</p>
+          </div>
+          <button 
+            onClick={() => setShowRequestForm(!showRequestForm)}
+            className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2 px-3 rounded-lg transition cursor-pointer"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            <span>{showRequestForm ? 'Vazgeç' : 'Yeni Talep Oluştur'}</span>
+          </button>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {showRequestForm && (
+            <div className="p-5 bg-gray-50 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Talep İçeriği / Malzeme</label>
+                  <input 
+                    type="text" 
+                    value={newRequestTitle} 
+                    onChange={e => setNewRequestTitle(e.target.value)} 
+                    placeholder="Örn: 5 Kutu A4 Kağıt" 
+                    className="w-full p-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Kategori</label>
+                  <select 
+                    value={newRequestType} 
+                    onChange={e => setNewRequestType(e.target.value)} 
+                    className="w-full p-2 border rounded-lg text-sm"
+                  >
+                    <option value="Malzeme">Sarf Malzeme</option>
+                    <option value="Hizmet">Hizmet / Bakım</option>
+                    <option value="Demirbaş">Demirbaş</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Öncelik</label>
+                  <select 
+                    value={newRequestPriority} 
+                    onChange={e => setNewRequestPriority(e.target.value)} 
+                    className="w-full p-2 border rounded-lg text-sm"
+                  >
+                    <option value="Normal">Normal</option>
+                    <option value="Acil">Acil</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <button 
+                  onClick={handleAddRequest}
+                  disabled={!newRequestTitle.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm py-2 px-6 rounded-lg transition"
+                >
+                  Talebi İlet
+                </button>
+              </div>
+            </div>
+          )}
+          {requestTasks.length > 0 ? requestTasks.map(task => (
+            <div key={task.id} className="p-5 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                  <ClipboardList className={`w-5 h-5 ${task.priority === 'Acil' ? 'text-rose-500' : 'text-blue-500'}`} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-sm">{task.title}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-2xs font-bold text-gray-400">Öncelik: <span className={task.priority === 'Acil' ? 'text-rose-600' : ''}>{task.priority}</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                 <span className={`px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-600`}>
+                  {task.status}
+                </span>
+                <div className="flex gap-2 mt-1">
+                  <button onClick={() => handleUpdateStatus(task.id, 'Onaylandı')} className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Onayla</button>
+                  <button onClick={() => handleUpdateStatus(task.id, 'Tamamlandı')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">Teslim Edildi</button>
+                  <button onClick={() => handleDeleteTask(task.id)} className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer">İptal</button>
+                </div>
+              </div>
+            </div>
+          )) : (
+            <div className="p-12 text-center text-gray-400">
+              <ClipboardList className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+              <p className="font-medium">Bekleyen talep bulunmuyor.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderIssues = () => (
     <div className="bg-white border border-gray-150 rounded-2xl shadow-xs overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -116,12 +338,65 @@ export default function TechnicalOperationsView({
           <h3 className="font-extrabold text-gray-800 text-sm">Arıza ve Bakım Defteri</h3>
           <p className="text-xs text-gray-500 mt-0.5">Saha personeli tarafından girilen aktif arıza kayıtları.</p>
         </div>
-        <button className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2 px-3 rounded-lg transition cursor-pointer">
+        <button 
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2 px-3 rounded-lg transition cursor-pointer"
+        >
           <Wrench className="w-3.5 h-3.5" />
-          <span>Yeni Arıza Bildir</span>
+          <span>{showAddForm ? 'Vazgeç' : 'Yeni Arıza Bildir'}</span>
         </button>
       </div>
       <div className="divide-y divide-gray-100">
+        {showAddForm && (
+          <div className="p-5 bg-gray-50 border-b border-gray-100 space-y-4">
+            <h4 className="font-bold text-sm text-gray-800">Yeni Arıza / Görev Bildir</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Başlık</label>
+                <input 
+                  type="text" 
+                  value={newTaskTitle} 
+                  onChange={e => setNewTaskTitle(e.target.value)} 
+                  placeholder="Örn: Elektrik Kesintisi" 
+                  className="w-full p-2 border rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Öncelik</label>
+                <select 
+                  value={newTaskPriority} 
+                  onChange={e => setNewTaskPriority(e.target.value as any)} 
+                  className="w-full p-2 border rounded-lg text-sm"
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Acil">Acil</option>
+                  <option value="Kritik">Kritik</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-bold text-gray-600">Açıklama / Detay</label>
+                  <VoiceNoteButton onTranscript={(t) => setNewTaskDesc(prev => prev ? prev + ' ' + t : t)} />
+                </div>
+                <textarea 
+                  value={newTaskDesc} 
+                  onChange={e => setNewTaskDesc(e.target.value)} 
+                  placeholder="Arıza detayı ve nerede olduğu..." 
+                  className="w-full p-2 border rounded-lg text-sm h-20"
+                ></textarea>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button 
+                onClick={handleAddTask}
+                disabled={!newTaskTitle.trim() || !newTaskDesc.trim()}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm py-2 px-6 rounded-lg transition"
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        )}
         {pendingTasks.length > 0 ? pendingTasks.map(task => (
           <div key={task.id} className="p-5 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -141,7 +416,11 @@ export default function TechnicalOperationsView({
                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700`}>
                 {task.status}
               </span>
-              <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">Müdahale Et</button>
+                            <div className="flex items-center gap-2">
+                <button onClick={() => handleUpdateStatus(task.id, 'Devam Ediyor')} className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Müdahale Et</button>
+                <button onClick={() => handleUpdateStatus(task.id, 'Tamamlandı')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">Tamamla</button>
+                <button onClick={() => handleDeleteTask(task.id)} className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer">Sil</button>
+              </div>
             </div>
           </div>
         )) : (
@@ -208,7 +487,7 @@ export default function TechnicalOperationsView({
       <div className="transition-all duration-300">
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'issues' && renderIssues()}
-        {activeTab === 'requests' && renderPlaceholder('Malzeme ve Satın Alma Talepleri', 'Departmanların ihtiyaç duyduğu sarf malzeme ve onarım talepleri.', ClipboardList)}
+        {activeTab === 'requests' && renderRequests()}
         {activeTab === 'ai-copilot' && renderPlaceholder('Yapay Zeka Teknik Copilot', 'Geçmiş arıza verilerini işleyerek kronik sorunları tespit eden asistan.', Sparkles)}
         {activeTab === 'reports' && renderPlaceholder('Teknik Raporlar', 'SLA özetleri ve departman performans karnesi.', FileText)}
         {activeTab === 'areas' && renderPlaceholder('Bölgesel Tarama', 'Tesis denetim logları ve QR bildirimleri.', MapPin)}

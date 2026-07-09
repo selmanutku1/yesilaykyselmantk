@@ -62,6 +62,7 @@ import DijitalArsivView from './components/DijitalArsivView';
 import IncidentLogsView from './components/IncidentLogsView';
 import SurveyAnalysisView from './components/SurveyAnalysisView';
 import LoginView from './components/LoginView';
+import SystemUpdatesView from './components/SystemUpdatesView';
 import PublicCalendarView from './components/PublicCalendarView';
 import { OnboardingGuide } from './components/OnboardingGuide';
 import UserProfileModal from './components/UserProfileModal';
@@ -128,17 +129,25 @@ export interface LoginUser {
   username: string;
   role: 'admin' | 'mudur' | 'kayit' | 'saglik' | 'yemekhane' | 'teknik' | 'guvenlik' | 'gonullu';
   roleName: string;
-  allowedTabs: ('dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit')[];
+  allowedTabs: ('dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'sistem-guncellemeleri')[];
 }
 
 export const USERS_LIST: LoginUser[] = [
+  {
+    id: 'ADMIN2',
+    name: 'Mahmut Çelik',
+    username: 'mahmut',
+    role: 'mudur',
+    roleName: 'Kamp Operasyonları',
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri']
+  },
   {
     id: 'ADMIN',
     name: 'Selman UTKU',
     username: 'admin',
     role: 'admin',
     roleName: 'Sistem Yöneticisi',
-    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri']
   },
   {
     id: 'S01',
@@ -146,7 +155,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'mudur',
     role: 'mudur',
     roleName: 'Kamp Müdürü',
-    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri']
   },
   {
     id: 'S02',
@@ -486,7 +495,7 @@ export default function App() {
 
   const toggleFullscreen = () => {
     const docEl = document.documentElement;
-    if (!document.fullscreenElement) {
+    if (!isFullscreen) {
       if (docEl.requestFullscreen) {
         docEl.requestFullscreen().then(() => {
           setIsFullscreen(true);
@@ -498,7 +507,7 @@ export default function App() {
         setIsFullscreen(true);
       }
     } else {
-      if (document.exitFullscreen) {
+      if (document.fullscreenElement && document.exitFullscreen) {
         document.exitFullscreen().then(() => {
           setIsFullscreen(false);
         }).catch((err) => {
@@ -1185,7 +1194,7 @@ export default function App() {
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-[#00875A] dark:text-emerald-100 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide">Kamp Yönetim Sistemi (KYS)</span>
+                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-[#00875A] dark:text-emerald-100 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1.5">Kamp Yönetim Sistemi (KYS) <span className="text-[9px] bg-indigo-500 text-white font-black px-1.5 py-0.5 rounded border border-indigo-600">BETA</span></span>
               </div>
             </div>
           </div>
@@ -1962,8 +1971,19 @@ export default function App() {
             />
           )}
 
-          {(hasAccess('dokümanlar') || hasAccess('ayarlar') || hasAccess('dijital-arsiv') || hasAccess('olay-kayit')) && (
+          {(hasAccess('dokümanlar') || hasAccess('ayarlar') || hasAccess('dijital-arsiv') || hasAccess('olay-kayit') || hasAccess('sistem-guncellemeleri')) && (
             <span className={`text-4xs font-extrabold text-gray-400 tracking-widest uppercase mt-6 mb-2 px-3 block ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>SİSTEM STANDARTLARI</span>
+          )}
+          {hasAccess('sistem-guncellemeleri') && (
+            <SidebarNavItem
+              id="sistem-guncellemeleri"
+              label="Sistem Güncellemeleri"
+              icon={Sparkles}
+              isActive={activeTab === 'sistem-guncellemeleri'}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onClick={() => handleActiveTabChange('sistem-guncellemeleri')}
+              hasAccessCheck={true}
+            />
           )}
 
           {hasAccess('dijital-arsiv') && (
@@ -2168,6 +2188,9 @@ export default function App() {
 
           {activeTab === 'dijital-arsiv' && (
             <DijitalArsivView onAddLog={addSystemLog} />
+          )}
+          {activeTab === 'sistem-guncellemeleri' && (
+            <SystemUpdatesView />
           )}
 
           {activeTab === 'olay-kayit' && (

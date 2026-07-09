@@ -26,6 +26,7 @@ import {
   FileDown
 } from 'lucide-react';
 import { HelpTooltip } from './HelpTooltip';
+import VoiceNoteButton from './VoiceNoteButton';
 
 interface HealthViewProps {
   participants: Participant[];
@@ -712,9 +713,12 @@ export default function HealthView({
               </div>
 
               <div>
-                <label className="block text-3xs font-extrabold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Şikayet ve Belirtiler *
-                </label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-3xs font-extrabold text-gray-500 uppercase tracking-wider">
+                    Şikayet ve Belirtiler *
+                  </label>
+                  <VoiceNoteButton onTranscript={(t) => setComplaint(prev => prev ? prev + ' ' + t : t)} />
+                </div>
                 <textarea
                   placeholder="Ateş (38.2°C), karın ağrısı vb..."
                   value={complaint}
@@ -726,9 +730,12 @@ export default function HealthView({
               </div>
 
               <div>
-                <label className="block text-3xs font-extrabold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Uygulanan Tedavi &amp; İlaç *
-                </label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-3xs font-extrabold text-gray-500 uppercase tracking-wider">
+                    Uygulanan Tedavi &amp; İlaç *
+                  </label>
+                  <VoiceNoteButton onTranscript={(t) => setTreatment(prev => prev ? prev + ' ' + t : t)} />
+                </div>
                 <textarea
                   placeholder="1 ölçek Calpol verildi, dinlendirildi..."
                   value={treatment}
