@@ -46,6 +46,7 @@ import {
 
 // Importing our modular sub-views
 import DashboardView from './components/DashboardView';
+import ReportsView from './components/ReportsView';
 import PeriodManagementView from './components/PeriodManagementView';
 import BungalowView from './components/BungalowView';
 import ParticipantView from './components/ParticipantView';
@@ -119,7 +120,7 @@ import {
   VolumeX,
   Filter,
   Sparkles,
-  Plus,
+  Plus, BarChart2,
   AlertTriangle
 } from 'lucide-react';
 
@@ -129,7 +130,7 @@ export interface LoginUser {
   username: string;
   role: 'admin' | 'mudur' | 'kayit' | 'saglik' | 'yemekhane' | 'teknik' | 'guvenlik' | 'gonullu';
   roleName: string;
-  allowedTabs: ('dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'sistem-guncellemeleri')[];
+  allowedTabs: ('dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'sistem-guncellemeleri' | 'raporlar')[];
 }
 
 export const USERS_LIST: LoginUser[] = [
@@ -139,7 +140,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'mahmut',
     role: 'mudur',
     roleName: 'Kamp Operasyonları',
-    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri', 'raporlar']
   },
   {
     id: 'ADMIN',
@@ -147,7 +148,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'admin',
     role: 'admin',
     roleName: 'Sistem Yöneticisi',
-    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'kayit', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'sistem-loglari', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri', 'raporlar']
   },
   {
     id: 'S01',
@@ -155,7 +156,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'mudur',
     role: 'mudur',
     roleName: 'Kamp Müdürü',
-    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri']
+    allowedTabs: ['dashboard', 'kamp-planlama', 'bungalov', 'katilimci', 'revir', 'yemekhane', 'teknik', 'guvenlik', 'maliyet', 'anket-analizi', 'dokümanlar', 'ayarlar', 'dijital-arsiv', 'olay-kayit', 'sistem-guncellemeleri', 'raporlar']
   },
   {
     id: 'S02',
@@ -354,6 +355,29 @@ export default function App() {
     localStorage.setItem('kys_users', JSON.stringify(users));
   }, [users]);
 
+
+  useEffect(() => {
+    // Migration: Add 'raporlar' tab to admins/mudur if missing in existing localstorage users
+    setUsers(prevUsers => {
+      let changed = false;
+      const newUsers = prevUsers.map(u => {
+        if ((u.role === 'admin' || u.role === 'mudur') && !u.allowedTabs.includes('raporlar' as any)) {
+          changed = true;
+          return { ...u, allowedTabs: [...u.allowedTabs, 'raporlar' as any] };
+        }
+        return u;
+      });
+      if (changed && currentUser && (currentUser.role === 'admin' || currentUser.role === 'mudur') && !currentUser.allowedTabs.includes('raporlar' as any)) {
+         const updatedCurrentUser = newUsers.find(u => u.id === currentUser.id);
+         if (updatedCurrentUser) {
+            setCurrentUser(updatedCurrentUser);
+            localStorage.setItem('kys_current_user', JSON.stringify(updatedCurrentUser));
+         }
+      }
+      return changed ? newUsers : prevUsers;
+    });
+  }, []);
+
   // Automatically sync planned & active camp periods into the camp activities (takvim)
   useEffect(() => {
     const nonPeriodActivities = activities.filter(act => !act.id.startsWith('period-'));
@@ -538,7 +562,7 @@ export default function App() {
   };
 
   // Active navigation tab
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'raporlar' | 'sistem-guncellemeleri'>('dashboard');
   const [registrationSubTab, setRegistrationSubTab] = useState<'form' | 'queue'>('form');
   const [technicalSubTab, setTechnicalSubTab] = useState<'dashboard' | 'issues' | 'requests' | 'ai-copilot' | 'reports' | 'areas'>('dashboard');
   const [isKayitMenuOpen, setIsKayitMenuOpen] = useState<boolean>(true);
@@ -548,7 +572,7 @@ export default function App() {
   const [externalSelectedParticipantId, setExternalSelectedParticipantId] = useState<string | null>(null);
 
   // Check role-based tab access
-  const hasAccess = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
+  const hasAccess = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'raporlar' | 'sistem-guncellemeleri' | 'raporlar' | 'sistem-guncellemeleri') => {
     if (!currentUser) return false;
     if (tab === 'kamp-planlama' && (currentUser.role === 'admin' || currentUser.role === 'mudur')) return true;
     if (currentUser.role === 'admin') return true;
@@ -642,7 +666,7 @@ export default function App() {
     };
   }, [isMobileMenuOpen]);
 
-  const handleActiveTabChange = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit') => {
+  const handleActiveTabChange = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'raporlar' | 'sistem-guncellemeleri') => {
     if (hasAccess(tab)) {
       setActiveTab(tab);
     }
@@ -1971,6 +1995,18 @@ export default function App() {
             />
           )}
 
+          {hasAccess('raporlar') && (
+            <SidebarNavItem
+              id="raporlar"
+              label="Faaliyet Raporları"
+              icon={BarChart2}
+              isActive={activeTab === 'raporlar'}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onClick={() => handleActiveTabChange('raporlar')}
+              hasAccessCheck={true}
+            />
+          )}
+
           {(hasAccess('dokümanlar') || hasAccess('ayarlar') || hasAccess('dijital-arsiv') || hasAccess('olay-kayit') || hasAccess('sistem-guncellemeleri')) && (
             <span className={`text-4xs font-extrabold text-gray-400 tracking-widest uppercase mt-6 mb-2 px-3 block ${isSidebarCollapsed ? 'lg:hidden' : 'block'}`}>SİSTEM STANDARTLARI</span>
           )}
@@ -2230,11 +2266,24 @@ export default function App() {
             <SurveyAnalysisView
               participants={participants}
               periods={periods}
-              onAddLog={addSystemLog}
-              onNavigateToParticipant={(participantId) => {
-                setExternalSelectedParticipantId(participantId);
+              onNavigateToParticipant={(id) => {
+                
                 handleActiveTabChange('katilimci');
               }}
+              onAddLog={addSystemLog}
+            />
+          )}
+
+          {activeTab === 'raporlar' && (
+            <ReportsView 
+              logs={logs}
+              expenses={expenses}
+              participants={participants}
+              campCenters={campCenters}
+              tasks={tasks}
+              incidents={incidents}
+              healthIncidents={healthIncidents}
+              activities={activities}
             />
           )}
 

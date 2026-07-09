@@ -31,7 +31,7 @@ export default function TechnicalOperationsView({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState<'Normal' | 'Acil' | 'Kritik'>('Normal');
+  const [newTaskPriority, setNewTaskPriority] = useState<'Normal' | 'Yüksek' | 'Kritik'>('Normal');
   const [newTaskDepartment, setNewTaskDepartment] = useState('Teknik');
 
   // Sync prop to state if it changes externally
@@ -50,7 +50,7 @@ export default function TechnicalOperationsView({
   const pendingTasks = techTasks.filter(t => t.status !== 'Tamamlandı');
   const completedTasks = techTasks.filter(t => t.status === 'Tamamlandı');
 
-  const handleUpdateStatus = (taskId: string, newStatus: string) => {
+  const handleUpdateStatus = (taskId: string, newStatus: 'Bekliyor' | 'Devam Ediyor' | 'Tamamlandı') => {
     onUpdateTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     onAddLog('Teknik Görev', taskId + ' numaralı görev ' + newStatus + ' olarak işaretlendi.');
   };
@@ -146,7 +146,7 @@ export default function TechnicalOperationsView({
                   className="w-full p-2 border rounded-lg text-sm"
                 >
                   <option value="Normal">Normal</option>
-                  <option value="Acil">Acil</option>
+                  <option value="Yüksek">Acil</option>
                   <option value="Kritik">Kritik</option>
                 </select>
               </div>
@@ -219,7 +219,7 @@ export default function TechnicalOperationsView({
       description: newRequestType + ' Talebi',
       status: 'Bekliyor',
       priority: newRequestPriority,
-      department: 'Satın Alma',
+      department: 'Diğer',
       assignedTo: 'Atanmadı',
       dueDate: new Date().toISOString().split('T')[0]
     };
@@ -230,7 +230,7 @@ export default function TechnicalOperationsView({
   };
 
   const renderRequests = () => {
-    const requestTasks = tasks.filter(t => t.department === 'Satın Alma' || t.id.startsWith('REQ-'));
+    const requestTasks = tasks.filter(t => t.department === 'Diğer' || t.id.startsWith('REQ-'));
     return (
       <div className="bg-white border border-gray-150 rounded-2xl shadow-xs overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -280,7 +280,7 @@ export default function TechnicalOperationsView({
                     className="w-full p-2 border rounded-lg text-sm"
                   >
                     <option value="Normal">Normal</option>
-                    <option value="Acil">Acil</option>
+                    <option value="Yüksek">Acil</option>
                   </select>
                 </div>
               </div>
@@ -299,13 +299,13 @@ export default function TechnicalOperationsView({
             <div key={task.id} className="p-5 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                  <ClipboardList className={`w-5 h-5 ${task.priority === 'Acil' ? 'text-rose-500' : 'text-blue-500'}`} />
+                  <ClipboardList className={`w-5 h-5 ${task.priority === 'Yüksek' ? 'text-rose-500' : 'text-blue-500'}`} />
                 </div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-sm">{task.title}</h4>
                   <p className="text-xs text-gray-500 mt-1">{task.description}</p>
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="text-2xs font-bold text-gray-400">Öncelik: <span className={task.priority === 'Acil' ? 'text-rose-600' : ''}>{task.priority}</span></span>
+                    <span className="text-2xs font-bold text-gray-400">Öncelik: <span className={task.priority === 'Yüksek' ? 'text-rose-600' : ''}>{task.priority}</span></span>
                   </div>
                 </div>
               </div>
@@ -314,7 +314,7 @@ export default function TechnicalOperationsView({
                   {task.status}
                 </span>
                 <div className="flex gap-2 mt-1">
-                  <button onClick={() => handleUpdateStatus(task.id, 'Onaylandı')} className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Onayla</button>
+                  <button onClick={() => handleUpdateStatus(task.id, 'Devam Ediyor')} className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Onayla</button>
                   <button onClick={() => handleUpdateStatus(task.id, 'Tamamlandı')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">Teslim Edildi</button>
                   <button onClick={() => handleDeleteTask(task.id)} className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer">İptal</button>
                 </div>
@@ -369,7 +369,7 @@ export default function TechnicalOperationsView({
                   className="w-full p-2 border rounded-lg text-sm"
                 >
                   <option value="Normal">Normal</option>
-                  <option value="Acil">Acil</option>
+                  <option value="Yüksek">Acil</option>
                   <option value="Kritik">Kritik</option>
                 </select>
               </div>

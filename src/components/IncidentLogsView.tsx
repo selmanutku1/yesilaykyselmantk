@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CampIncident } from '../types';
 import { AlertOctagon, ShieldAlert, FileWarning, Plus, Trash2, CheckCircle, Search, Printer, Download, FileDown } from 'lucide-react';
+import VoiceNoteButton from "./VoiceNoteButton";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -334,7 +335,7 @@ export default function IncidentLogsView({
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = inc.title.toLowerCase().includes(searchLower) || 
                           inc.description.toLowerCase().includes(searchLower) ||
-                          inc.reportedBy.toLowerCase().includes(searchLower) ||
+                          inc.reporterName.toLowerCase().includes(searchLower) ||
                           inc.actionTaken?.toLowerCase().includes(searchLower) ||
                           inc.id.toLowerCase().includes(searchLower) ||
                           inc.type.toLowerCase().includes(searchLower);
