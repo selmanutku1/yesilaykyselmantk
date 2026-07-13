@@ -4,7 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { ThemePalette, getThemeCSS } from './themeColors';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   INITIAL_CAMP_CENTERS, 
   INITIAL_BUNGALOWS, 
@@ -47,6 +48,7 @@ import {
 // Importing our modular sub-views
 import DashboardView from './components/DashboardView';
 import ReportsView from './components/ReportsView';
+import OfflineBanner from './components/OfflineBanner';
 import PeriodManagementView from './components/PeriodManagementView';
 import BungalowView from './components/BungalowView';
 import ParticipantView from './components/ParticipantView';
@@ -62,12 +64,14 @@ import SystemLogsView from './components/SystemLogsView';
 import DijitalArsivView from './components/DijitalArsivView';
 import IncidentLogsView from './components/IncidentLogsView';
 import SurveyAnalysisView from './components/SurveyAnalysisView';
+import KampSonuDegerlendirmeRaporu from './components/KampSonuDegerlendirmeRaporu';
 import LoginView from './components/LoginView';
 import SystemUpdatesView from './components/SystemUpdatesView';
 import PublicCalendarView from './components/PublicCalendarView';
 import { OnboardingGuide } from './components/OnboardingGuide';
 import UserProfileModal from './components/UserProfileModal';
 import Screensaver from './components/Screensaver';
+import YesilAiChatbot from "./components/YesilAiChatbot";
 
 // Lucide icons
 import { 
@@ -172,7 +176,7 @@ export const USERS_LIST: LoginUser[] = [
     username: 'gonullu',
     role: 'gonullu',
     roleName: 'Gönüllü Yönetimi',
-    allowedTabs: ['dashboard', 'kayit']
+    allowedTabs: ['dashboard', 'kayit', 'kamp-planlama']
   },
   {
     id: 'S06',
@@ -331,12 +335,12 @@ export default function App() {
 
   // Public Calendar routing state
   const [isPublicCalendar, setIsPublicCalendar] = useState<boolean>(() => {
-    return window.location.search.includes('view=takvim') || window.location.hash === '#takvim';
+    return window.location.pathname.endsWith('/takvim') || window.location.search.includes('view=takvim') || window.location.hash === '#takvim';
   });
 
   useEffect(() => {
     const handleUrlChange = () => {
-      const isPublic = window.location.search.includes('view=takvim') || window.location.hash === '#takvim';
+      const isPublic = window.location.pathname.endsWith('/takvim') || window.location.search.includes('view=takvim') || window.location.hash === '#takvim';
       setIsPublicCalendar(isPublic);
     };
     window.addEventListener('popstate', handleUrlChange);
@@ -367,7 +371,7 @@ export default function App() {
         }
         return u;
       });
-      if (changed && currentUser && (currentUser.role === 'admin' || currentUser.role === 'mudur') && !currentUser.allowedTabs.includes('raporlar' as any)) {
+      if (changed && currentUser && (currentUser.role === 'admin' || currentUser.role === 'mudur' || currentUser.role === 'gonullu') && !currentUser.allowedTabs.includes('raporlar' as any)) {
          const updatedCurrentUser = newUsers.find(u => u.id === currentUser.id);
          if (updatedCurrentUser) {
             setCurrentUser(updatedCurrentUser);
@@ -442,6 +446,29 @@ export default function App() {
     if (oldMode === 'false') return 'light';
     return 'system';
   });
+  
+  const [colorPalette, setColorPalette] = useState<ThemePalette>(() => {
+    return (localStorage.getItem('kys_color_palette') as ThemePalette) || 'emerald';
+  });
+
+  useEffect(() => {
+    const handlePaletteChange = () => {
+      const saved = localStorage.getItem('kys_color_palette') as ThemePalette;
+      if (saved) setColorPalette(saved);
+    };
+    window.addEventListener('kys_color_palette_changed', handlePaletteChange);
+    return () => window.removeEventListener('kys_color_palette_changed', handlePaletteChange);
+  }, []);
+
+  useEffect(() => {
+    let styleEl = document.getElementById('kys-theme-override');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'kys-theme-override';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = getThemeCSS(colorPalette);
+  }, [colorPalette]);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
@@ -513,8 +540,17 @@ export default function App() {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !document.fullscreenElement) {
+        setIsFullscreen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const toggleFullscreen = () => {
@@ -574,7 +610,7 @@ export default function App() {
   // Check role-based tab access
   const hasAccess = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'raporlar' | 'sistem-guncellemeleri' | 'raporlar' | 'sistem-guncellemeleri') => {
     if (!currentUser) return false;
-    if (tab === 'kamp-planlama' && (currentUser.role === 'admin' || currentUser.role === 'mudur')) return true;
+    if (tab === 'kamp-planlama' && (currentUser.role === 'admin' || currentUser.role === 'mudur' || currentUser.role === 'gonullu')) return true;
     if (currentUser.role === 'admin') return true;
     return currentUser.allowedTabs.includes(tab);
   };
@@ -667,8 +703,12 @@ export default function App() {
   }, [isMobileMenuOpen]);
 
   const handleActiveTabChange = (tab: 'dashboard' | 'kamp-planlama' | 'bungalov' | 'katilimci' | 'kayit' | 'revir' | 'yemekhane' | 'teknik' | 'guvenlik' | 'dokümanlar' | 'ayarlar' | 'maliyet' | 'anket-analizi' | 'sistem-loglari' | 'dijital-arsiv' | 'olay-kayit' | 'raporlar' | 'sistem-guncellemeleri') => {
+    console.log('Navigating to tab:', tab);
     if (hasAccess(tab)) {
       setActiveTab(tab);
+    } else {
+      console.log('Access denied to tab:', tab);
+      addToast('Bu sayfaya erişim yetkiniz bulunmuyor.', 'alert');
     }
     setIsMobileMenuOpen(false);
   };
@@ -676,27 +716,44 @@ export default function App() {
   // URL parameters detection
   const params = new URLSearchParams(window.location.search);
   const isRemotePortal = params.get('portal') === 'basvuru';
+  const isKampSonuForm = params.get('form') === 'kamp-sonu-degerlendirme' || window.location.href.includes('form=kamp-sonu-degerlendirme');
 
   // State synchronization helper
-  const syncStateWithServer = (dataToSync: {
-    participants?: Participant[];
-    periods?: CampPeriod[];
-    healthIncidents?: HealthIncident[];
-    surveys?: SurveyResponse[];
-    logs?: SystemLog[];
-    bungalows?: Bungalow[];
-    campCenters?: CampCenter[];
-    mealPlans?: MealPlan[];
-    expenses?: Expense[];
-    tasks?: Task[];
-    shifts?: ShiftAssignment[];
-    activities?: CampActivity[];
-  }) => {
+  const syncStateWithServer = (dataToSync: any) => {
+    const handleOfflineBackup = () => {
+      try {
+        const pendingSync = JSON.parse(localStorage.getItem('kys_pending_sync') || '{}');
+        const updatedSync = { ...pendingSync, ...dataToSync };
+        localStorage.setItem('kys_pending_sync', JSON.stringify(updatedSync));
+        
+        // Otomatik çevrimdışı yedekleme indirme bağlantısı
+        const blob = new Blob([JSON.stringify(updatedSync, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kys_offline_backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error("Error saving pending sync data offline:", e);
+      }
+    };
+
+    if (!navigator.onLine) {
+      handleOfflineBackup();
+      return;
+    }
+
     fetch('/api/state/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dataToSync)
-    }).catch(err => console.error("Error syncing state with server:", err));
+    }).catch(err => {
+      console.error("Error syncing state with server, saving locally:", err);
+      handleOfflineBackup();
+    });
   };
 
   // Load from backend API with localStorage fallback
@@ -1058,6 +1115,35 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [participants, periods, bungalows, campCenters, mealPlans, healthIncidents, surveys, logs]);
 
+
+  if (isKampSonuForm) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex justify-center items-center z-30 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center p-2 rounded-xl">
+              <svg viewBox="0 0 100 100" className="w-10 h-10">
+                <path d="M50 5 C25 5 5 25 5 50 C5 75 25 95 50 95 C75 95 95 75 95 50 C95 25 75 5 50 5 Z" fill="#059669"/>
+                <path d="M70 30 C70 30 55 45 40 60 C35 65 25 55 30 50 C45 35 60 20 60 20 Z" fill="#ffffff"/>
+                <path d="M40 70 C40 70 55 55 70 40 C75 35 85 45 80 50 C65 65 50 80 50 80 Z" fill="#ffffff"/>
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">YEŞİLAY</h1>
+              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5">TÜRKİYE YEŞİLAY CEMİYETİ</span>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 pt-8 md:pt-12">
+          <KampSonuDegerlendirmeRaporu />
+        </main>
+        <footer className="py-6 border-t border-gray-200 bg-white text-center text-xs text-gray-500 font-semibold mt-12">
+          <p>© 2026 Türkiye Yeşilay Cemiyeti</p>
+        </footer>
+      </div>
+    );
+  }
+
   if (isRemotePortal) {
     return (
       <div className="min-h-screen bg-neutral-50 flex flex-col font-sans" id="yesilay-kys-remote-portal">
@@ -1187,7 +1273,16 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 flex flex-col font-sans ${isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen overflow-hidden' : ''}`} id="yesilay-kys-master-parent">
+    <AnimatePresence mode="wait">
+      <motion.div 
+        key={theme} 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 flex flex-col font-sans ${isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen overflow-hidden' : ''}`} id="yesilay-kys-master-parent"
+      >
+      <OfflineBanner />
       
       {/* SaaS Executive Header Banner */}
       <header className="print:hidden bg-white dark:bg-gray-800 border-b border-gray-150 dark:border-gray-700 px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-0 z-30 shadow-xs transition-colors duration-200">
@@ -1257,12 +1352,19 @@ export default function App() {
           {/* Action Icons & User Profile */}
           <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
             {/* Tekli Gece / Gündüz Modu Butonu */}
+                        {/* Tekli Gece / Gündüz / Sistem Modu Butonu */}
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => {
+                if (theme === 'light') setTheme('dark');
+                else if (theme === 'dark') setTheme('system');
+                else setTheme('light');
+              }}
               className="p-1.5 md:p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition flex items-center justify-center cursor-pointer border border-gray-200/50 dark:border-gray-700"
-              title={theme === 'dark' ? "Aydınlık Moda Geç (Gündüz)" : "Karanlık Moda Geç (Gece)"}
+              title={theme === 'light' ? 'Karanlık Moda Geç' : theme === 'dark' ? 'Sistem Temasına Geç' : 'Aydınlık Moda Geç'}
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-gray-500" />}
+              {theme === 'light' && <Moon className="w-4 h-4 text-gray-500" />}
+              {theme === 'dark' && <Sun className="w-4 h-4 text-amber-500" />}
+              {theme === 'system' && <Monitor className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
             </button>
 
             {/* Tam Ekran Modu Butonu */}
@@ -1634,6 +1736,8 @@ export default function App() {
         </div>
       </header>
 
+
+
       {/* Main Container Section */}
       <div className="flex-grow flex flex-col lg:flex-row transition-colors duration-200 min-h-0">
         
@@ -1661,13 +1765,19 @@ export default function App() {
                 <span className="text-[10px] font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hızlı Sistem Kontrolleri</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <button
+                                <button
                   type="button"
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  onClick={() => {
+                    if (theme === 'light') setTheme('dark');
+                    else if (theme === 'dark') setTheme('system');
+                    else setTheme('light');
+                  }}
                   className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
                 >
-                  {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-gray-500" />}
-                  <span className="text-[9px] font-bold">Tema</span>
+                  {theme === 'light' && <Moon className="w-4 h-4 text-gray-500" />}
+                  {theme === 'dark' && <Sun className="w-4 h-4 text-amber-500" />}
+                  {theme === 'system' && <Monitor className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                  <span className="text-[9px] font-bold">Tema ({theme === 'light' ? 'Açık' : theme === 'dark' ? 'Koyu' : 'Sistem'})</span>
                 </button>
                 <button
                   type="button"
@@ -1734,8 +1844,8 @@ export default function App() {
           {hasAccess('dashboard') && (
             <SidebarNavItem
               id="dashboard"
-              label="Kontrol Paneli (Dashboard)"
-              icon={LayoutDashboard}
+              label={currentUser?.role === 'gonullu' ? 'Kamp Takvimi' : 'Kontrol Paneli (Dashboard)'}
+              icon={currentUser?.role === 'gonullu' ? Calendar : LayoutDashboard}
               isActive={activeTab === 'dashboard'}
               isSidebarCollapsed={isSidebarCollapsed}
               onClick={() => handleActiveTabChange('dashboard')}
@@ -2105,7 +2215,7 @@ export default function App() {
         </nav>
 
         {/* Dynamic workspace panel */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-[1600px] mx-auto w-full">
+        <main className={`flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto w-full ${isFullscreen ? 'max-w-none' : 'max-w-[1600px] mx-auto'}`}>
           {/* Active Tab View routers */}
           
           {activeTab === 'kamp-planlama' && (
@@ -2241,6 +2351,8 @@ export default function App() {
 
           {activeTab === 'ayarlar' && (
             <SettingsView
+              theme={theme}
+              setTheme={setTheme}
               currentUser={currentUser}
               users={users}
               onUpdateUsers={setUsers}
@@ -2284,6 +2396,8 @@ export default function App() {
               incidents={incidents}
               healthIncidents={healthIncidents}
               activities={activities}
+              surveys={surveys}
+              periods={periods}
             />
           )}
 
@@ -2439,6 +2553,53 @@ export default function App() {
       {isIdle && (
         <Screensaver currentUser={currentUser} onDismiss={() => setIsIdle(false)} />
       )}
-    </div>
+      </motion.div>
+      {currentUser && (
+        <YesilAiChatbot 
+          onNavigate={handleActiveTabChange}
+          onFullscreen={(enable) => {
+            const docEl = document.documentElement;
+            if (enable && !isFullscreen) {
+              if (docEl.requestFullscreen) docEl.requestFullscreen();
+            } else if (!enable && isFullscreen) {
+              if (document.exitFullscreen) document.exitFullscreen();
+            }
+          }}
+          onThemeChange={setTheme}
+
+          onDataAction={(actionName, data) => {
+            if (actionName === 'CREATE_CAMP_PERIOD') {
+              const newPeriod = { id: `PRD-${Date.now()}`, ...data };
+              setPeriods([...periods, newPeriod]);
+              addToast(`Yeni kamp dönemi eklendi: ${data.name}`, 'info');
+              handleActiveTabChange('kamp-planlama');
+            } else if (actionName === 'ADD_PARTICIPANT') {
+              const newParticipant = { id: `STD-${Date.now()}`, ...data };
+              setParticipants([...participants, newParticipant]);
+              addToast(`Yeni katılımcı eklendi: ${data.firstName} ${data.lastName}`, 'info');
+              handleActiveTabChange('katilimci');
+            
+            } else if (actionName === 'CREATE_TASK') {
+              const newTask = { id: `TSK-${Date.now()}`, history: [], ...data };
+              setTasks([...tasks, newTask]);
+              addToast(`Yeni görev atandı: ${data.title}`, 'info');
+              handleActiveTabChange('teknik');
+            } else if (actionName === 'ADD_BUNGALOW') {
+              const newBungalow = { id: `BNG-${Date.now()}`, currentOccupants: 0, status: 'Müsait', conditions: { cleanliness: 100, maintenance: 100, lastCleaned: new Date().toISOString() }, issues: [], ...data };
+              setBungalows([...bungalows, newBungalow]);
+              addToast(`Yeni bungalov eklendi: ${data.number}`, 'info');
+              handleActiveTabChange('bungalov');
+            } else if (actionName === 'ADD_HEALTH_INCIDENT') {
+              const incident = { id: `INC-${Date.now()}`, ...data };
+              setHealthIncidents([...healthIncidents, incident]);
+              addToast(`Sağlık vakası kaydedildi.`, 'warning');
+              handleActiveTabChange('revir');
+            }
+          }}
+
+          onLockScreen={() => setIsIdle(true)}
+        />
+      )}
+    </AnimatePresence>
   );
 }

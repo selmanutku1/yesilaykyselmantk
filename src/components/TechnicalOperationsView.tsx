@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Wrench, ClipboardList, TrendingUp, Sparkles, FileText, 
-  MapPin, CheckCircle, Clock, AlertTriangle, AlertCircle, Phone, Smartphone 
+  MapPin, CheckCircle, Clock, AlertTriangle, AlertCircle, Phone, Smartphone, ImagePlus, History, FileImage, History as HistoryIcon 
 } from 'lucide-react';
 import { Task, ShiftAssignment, TechnicalIssue, SupplyRequest } from '../types';
 import VoiceNoteButton from './VoiceNoteButton';
@@ -31,8 +31,10 @@ export default function TechnicalOperationsView({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState<'Normal' | 'Yüksek' | 'Kritik'>('Normal');
+  const [newTaskPriority, setNewTaskPriority] = useState<'Orta' | 'Yüksek' | 'Kritik'>('Orta');
   const [newTaskDepartment, setNewTaskDepartment] = useState('Teknik');
+  const [newTaskImage, setNewTaskImage] = useState('');
+  const [expandedTaskHistoryId, setExpandedTaskHistoryId] = useState<string | null>(null);
 
   // Sync prop to state if it changes externally
   React.useEffect(() => {
@@ -51,7 +53,17 @@ export default function TechnicalOperationsView({
   const completedTasks = techTasks.filter(t => t.status === 'Tamamlandı');
 
   const handleUpdateStatus = (taskId: string, newStatus: 'Bekliyor' | 'Devam Ediyor' | 'Tamamlandı') => {
-    onUpdateTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    onUpdateTasks(tasks.map(t => {
+      if (t.id === taskId) {
+        const h = t.history || [];
+        return { 
+          ...t, 
+          status: newStatus,
+          history: [...h, { date: new Date().toISOString(), user: 'Kullanıcı', action: `Durum güncellendi: ${newStatus}` }]
+        };
+      }
+      return t;
+    }));
     onAddLog('Teknik Görev', taskId + ' numaralı görev ' + newStatus + ' olarak işaretlendi.');
   };
   
@@ -72,14 +84,17 @@ export default function TechnicalOperationsView({
       priority: newTaskPriority,
       department: newTaskDepartment,
       assignedTo: 'Atanmadı',
-      dueDate: new Date().toISOString().split('T')[0]
+      dueDate: new Date().toISOString().split('T')[0],
+      imageUrl: newTaskImage || undefined,
+      history: [{ date: new Date().toISOString(), user: 'Oluşturan', action: 'Kayıt Açıldı' }]
     };
     onUpdateTasks([...tasks, newTask as Task]);
     onAddLog('Yeni Görev', newTaskTitle + ' görevi oluşturuldu.');
     setShowAddForm(false);
     setNewTaskTitle('');
     setNewTaskDesc('');
-    setNewTaskPriority('Normal');
+    setNewTaskImage('');
+    setNewTaskPriority('Orta');
   };
 
   const renderDashboard = () => (
@@ -145,7 +160,7 @@ export default function TechnicalOperationsView({
                   onChange={e => setNewTaskPriority(e.target.value as any)} 
                   className="w-full p-2 border rounded-lg text-sm"
                 >
-                  <option value="Normal">Normal</option>
+                  <option value="Orta">Normal</option>
                   <option value="Yüksek">Acil</option>
                   <option value="Kritik">Kritik</option>
                 </select>
@@ -162,6 +177,37 @@ export default function TechnicalOperationsView({
                   className="w-full p-2 border rounded-lg text-sm h-20"
                 ></textarea>
               </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-600 mb-1">Arıza Görseli (İsteğe Bağlı)</label>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                     <input 
+                       type="file" 
+                       accept="image/*"
+                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                       onChange={(e) => {
+                         if(e.target.files && e.target.files[0]) {
+                           const reader = new FileReader();
+                           reader.onload = (event) => {
+                             setNewTaskImage(event.target?.result as string);
+                           };
+                           reader.readAsDataURL(e.target.files[0]);
+                         }
+                       }}
+                     />
+                     <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium transition pointer-events-none">
+                       <ImagePlus className="w-4 h-4" /> Görsel Yükle
+                     </button>
+                  </div>
+                  {newTaskImage && (
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200">
+                      <img src={newTaskImage} alt="Önizleme" className="w-full h-full object-cover" />
+                      <button onClick={() => setNewTaskImage('')} className="absolute top-0 right-0 bg-white/80 p-0.5 rounded-bl hover:bg-rose-100 text-rose-600 transition">✕</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
             <div className="flex justify-end pt-2">
               <button 
@@ -208,7 +254,7 @@ export default function TechnicalOperationsView({
 
     const [newRequestTitle, setNewRequestTitle] = useState('');
   const [newRequestType, setNewRequestType] = useState('Malzeme');
-  const [newRequestPriority, setNewRequestPriority] = useState('Normal');
+  const [newRequestPriority, setNewRequestPriority] = useState('Orta');
   const [showRequestForm, setShowRequestForm] = useState(false);
 
   const handleAddRequest = () => {
@@ -279,7 +325,7 @@ export default function TechnicalOperationsView({
                     onChange={e => setNewRequestPriority(e.target.value)} 
                     className="w-full p-2 border rounded-lg text-sm"
                   >
-                    <option value="Normal">Normal</option>
+                    <option value="Orta">Normal</option>
                     <option value="Yüksek">Acil</option>
                   </select>
                 </div>
@@ -368,7 +414,7 @@ export default function TechnicalOperationsView({
                   onChange={e => setNewTaskPriority(e.target.value as any)} 
                   className="w-full p-2 border rounded-lg text-sm"
                 >
-                  <option value="Normal">Normal</option>
+                  <option value="Orta">Normal</option>
                   <option value="Yüksek">Acil</option>
                   <option value="Kritik">Kritik</option>
                 </select>
@@ -398,7 +444,8 @@ export default function TechnicalOperationsView({
           </div>
         )}
         {pendingTasks.length > 0 ? pendingTasks.map(task => (
-          <div key={task.id} className="p-5 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <React.Fragment key={task.id}>
+          <div className="p-5 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
                 <AlertTriangle className={`w-5 h-5 ${task.priority === 'Kritik' ? 'text-rose-500' : 'text-amber-500'}`} />
@@ -412,17 +459,38 @@ export default function TechnicalOperationsView({
                 </div>
               </div>
             </div>
+            {task.imageUrl && (
+              <div className="shrink-0 cursor-pointer hover:opacity-80 transition" onClick={() => window.open(task.imageUrl, '_blank')}>
+                <img src={task.imageUrl} alt="Arıza Görseli" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+              </div>
+            )}
             <div className="flex flex-col sm:items-end gap-2 shrink-0">
                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700`}>
                 {task.status}
               </span>
                             <div className="flex items-center gap-2">
+                <button onClick={() => setExpandedTaskHistoryId(expandedTaskHistoryId === task.id ? null : task.id)} className="text-xs font-bold text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1"><HistoryIcon className="w-3 h-3" /> Geçmiş</button>
                 <button onClick={() => handleUpdateStatus(task.id, 'Devam Ediyor')} className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Müdahale Et</button>
                 <button onClick={() => handleUpdateStatus(task.id, 'Tamamlandı')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">Tamamla</button>
                 <button onClick={() => handleDeleteTask(task.id)} className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer">Sil</button>
               </div>
             </div>
           </div>
+          {expandedTaskHistoryId === task.id && task.history && task.history.length > 0 && (
+            <div className="px-5 pb-5 bg-gray-50/30 text-xs">
+              <h5 className="font-bold text-gray-700 mb-2 border-b border-gray-100 pb-1">İşlem Geçmişi</h5>
+              <div className="space-y-2">
+                {task.history.map((h, i) => (
+                  <div key={i} className="flex gap-2 text-gray-600">
+                    <span className="text-gray-400 w-24 shrink-0">{new Date(h.date).toLocaleDateString('tr-TR')} {new Date(h.date).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}</span>
+                    <span className="font-medium text-gray-800">{h.user}:</span>
+                    <span>{h.action}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </React.Fragment>
         )) : (
           <div className="p-12 text-center text-gray-400">
             <Wrench className="w-12 h-12 mx-auto text-gray-300 mb-3" />

@@ -14,7 +14,9 @@ import {
   CalendarDays,
   Globe,
   Sun,
-  Moon
+  Moon,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import { CampActivity, CampCenter } from '../types';
 
@@ -25,6 +27,23 @@ interface PublicCalendarViewProps {
 
 export default function PublicCalendarView({ activities, campCenters }: PublicCalendarViewProps) {
   // Local active theme state to toggle light/dark
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Use CSS-based fullscreen to avoid iframe restrictions
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
   const [isDark, setIsDark] = useState<boolean>(() => {
     const saved = localStorage.getItem('kys_theme');
     if (saved === 'dark') return true;
@@ -115,7 +134,13 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
   };
 
   const handleCopyLink = () => {
-    const publicUrl = window.location.origin + window.location.pathname + '?view=takvim';
+    let baseUrl = window.location.origin + window.location.pathname;
+    if (baseUrl.endsWith('/takvim')) {
+      baseUrl = baseUrl.slice(0, -7);
+    } else if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+    const publicUrl = baseUrl + '/takvim';
     navigator.clipboard.writeText(publicUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -131,7 +156,7 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 font-sans flex flex-col" id="public-calendar-master">
+    <div className={`bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 font-sans flex flex-col ${isFullscreen ? 'fixed inset-0 z-[100] overflow-y-auto w-full h-full' : 'min-h-screen'}`} id="public-calendar-master">
          {/* Header Banner */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-150 dark:border-gray-750 px-4 md:px-6 py-2.5 flex justify-between items-center sticky top-0 z-30 shadow-xs">
         <div className="flex items-center gap-3">
@@ -161,6 +186,16 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
 
         {/* Header Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Full Screen Toggle */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="hidden sm:flex p-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+            title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"}
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+          </button>
+
           {/* Theme Selector */}
           <button
             type="button"
@@ -173,8 +208,10 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
         </div>
       </header>
 
+
+
       {/* Main Workspace Area */}
-      <main className="flex-1 p-3 md:p-5 max-w-[1600px] mx-auto w-full">
+      <main className={`flex-1 p-3 md:p-5 w-full ${isFullscreen ? '' : 'max-w-[1600px] mx-auto'}`}>
         
         {/* Unified Calendar Container */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-750 p-4 md:p-5 shadow-xs space-y-4">
@@ -352,11 +389,11 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                               {dateAct.slice(0, 3).map((act) => {
                                 const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                                 let pClass = 'bg-gray-50 text-gray-700 border-gray-100 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800';
-                                if (act.type === 'Spor') pClass = 'bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900';
-                                else if (act.type === 'Atölye') pClass = 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';
-                                else if (act.type === 'Eğitim') pClass = 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
-                                else if (act.type === 'Seminer') pClass = 'bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900';
-                                else if (act.type === 'Eğlence') pClass = 'bg-pink-50 text-pink-700 border-pink-100 hover:bg-pink-100 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-900';
+                                if (act.type === 'Spor') pClass = 'bg-sky-500 text-white border-sky-600 hover:bg-sky-600 dark:bg-sky-600 dark:text-white dark:border-sky-700';
+                                else if (act.type === 'Atölye') pClass = 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 dark:bg-amber-600 dark:text-white dark:border-amber-700';
+                                else if (act.type === 'Eğitim') pClass = 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 dark:bg-emerald-600 dark:text-white dark:border-emerald-700';
+                                else if (act.type === 'Seminer') pClass = 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 dark:bg-purple-600 dark:text-white dark:border-purple-700';
+                                else if (act.type === 'Eğlence') pClass = 'bg-pink-500 text-white border-pink-600 hover:bg-pink-600 dark:bg-pink-600 dark:text-white dark:border-pink-700';
 
                                 return (
                                   <div
@@ -418,11 +455,11 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                             {dateAct.map((act) => {
                               const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                               let badgeC = 'bg-gray-50 border-gray-150 text-gray-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-350';
-                              if (act.type === 'Spor') badgeC = 'bg-sky-50 border-sky-150 text-sky-700 dark:bg-sky-950/30 dark:border-sky-900 dark:text-sky-300';
-                              else if (act.type === 'Atölye') badgeC = 'bg-amber-50 border-amber-150 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900 dark:text-amber-300';
-                              else if (act.type === 'Eğitim') badgeC = 'bg-emerald-50 border-emerald-150 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-300';
-                              else if (act.type === 'Seminer') badgeC = 'bg-purple-50 border-purple-150 text-purple-700 dark:bg-purple-950/30 dark:border-purple-900 dark:text-purple-300';
-                              else if (act.type === 'Eğlence') badgeC = 'bg-pink-50 border-pink-150 text-pink-700 dark:bg-pink-950/30 dark:border-pink-900 dark:text-pink-300';
+                              if (act.type === 'Spor') badgeC = 'bg-sky-500 border-sky-600 text-white dark:bg-sky-600 dark:border-sky-700 dark:text-white hover:bg-sky-600 hover:shadow-md';
+                              else if (act.type === 'Atölye') badgeC = 'bg-amber-500 border-amber-600 text-white dark:bg-amber-600 dark:border-amber-700 dark:text-white hover:bg-amber-600 hover:shadow-md';
+                              else if (act.type === 'Eğitim') badgeC = 'bg-emerald-500 border-emerald-600 text-white dark:bg-emerald-600 dark:border-emerald-700 dark:text-white hover:bg-emerald-600 hover:shadow-md';
+                              else if (act.type === 'Seminer') badgeC = 'bg-purple-500 border-purple-600 text-white dark:bg-purple-600 dark:border-purple-700 dark:text-white hover:bg-purple-600 hover:shadow-md';
+                              else if (act.type === 'Eğlence') badgeC = 'bg-pink-500 border-pink-600 text-white dark:bg-pink-600 dark:border-pink-700 dark:text-white hover:bg-pink-600 hover:shadow-md';
 
                               return (
                                 <div
@@ -458,11 +495,11 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                       {getActivitiesForDate(calendarReferenceDate).map((act) => {
                         const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         let badgeC = 'bg-gray-50 border-gray-150 text-gray-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300';
-                        if (act.type === 'Spor') badgeC = 'bg-sky-50 border-sky-150 text-sky-700 dark:bg-sky-950/30 dark:border-sky-900 dark:text-sky-300';
-                        else if (act.type === 'Atölye') badgeC = 'bg-amber-50 border-amber-150 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900 dark:text-amber-300';
-                        else if (act.type === 'Eğitim') badgeC = 'bg-emerald-50 border-emerald-150 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-300';
-                        else if (act.type === 'Seminer') badgeC = 'bg-purple-50 border-purple-150 text-purple-700 dark:bg-purple-950/30 dark:border-purple-900 dark:text-purple-300';
-                        else if (act.type === 'Eğlence') badgeC = 'bg-pink-50 border-pink-150 text-pink-700 dark:bg-pink-950/30 dark:border-pink-900 dark:text-pink-300';
+                        if (act.type === 'Spor') badgeC = 'bg-sky-500 border-sky-600 text-white dark:bg-sky-600 dark:border-sky-700 dark:text-white hover:bg-sky-600 hover:shadow-md';
+                        else if (act.type === 'Atölye') badgeC = 'bg-amber-500 border-amber-600 text-white dark:bg-amber-600 dark:border-amber-700 dark:text-white hover:bg-amber-600 hover:shadow-md';
+                        else if (act.type === 'Eğitim') badgeC = 'bg-emerald-500 border-emerald-600 text-white dark:bg-emerald-600 dark:border-emerald-700 dark:text-white hover:bg-emerald-600 hover:shadow-md';
+                        else if (act.type === 'Seminer') badgeC = 'bg-purple-500 border-purple-600 text-white dark:bg-purple-600 dark:border-purple-700 dark:text-white hover:bg-purple-600 hover:shadow-md';
+                        else if (act.type === 'Eğlence') badgeC = 'bg-pink-500 border-pink-600 text-white dark:bg-pink-600 dark:border-pink-700 dark:text-white hover:bg-pink-600 hover:shadow-md';
 
                         return (
                           <div
@@ -473,14 +510,14 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                             <div className="space-y-1.5 text-left">
                               <div className="flex items-center gap-2">
                                 <span className="text-[9px] font-bold uppercase tracking-wider bg-white/80 dark:bg-gray-800/80 border dark:border-gray-700 px-2.5 py-0.5 rounded-md">{act.type}</span>
-                                <span className="text-2xs font-extrabold text-gray-500 dark:text-gray-400">{actTime}</span>
+                                <span className="text-2xs font-extrabold opacity-90">{actTime}</span>
                               </div>
-                              <h4 className="text-xs font-black text-gray-850 dark:text-gray-100">{act.title}</h4>
-                              <p className="text-[10px] text-gray-450 dark:text-gray-400 font-semibold">
-                                Konum: <strong className="text-gray-600 dark:text-gray-200">{act.location}</strong> • Sorumlu Lider: <strong className="text-gray-600 dark:text-gray-200">{act.instructorId}</strong>
+                              <h4 className="text-xs font-black text-current">{act.title}</h4>
+                              <p className="text-[10px] opacity-80 font-medium">
+                                Konum: <strong className="opacity-100">{act.location}</strong> • Sorumlu Lider: <strong className="opacity-100">{act.instructorId}</strong>
                               </p>
                             </div>
-                            <span className="text-3xs font-extrabold uppercase bg-white/50 dark:bg-gray-800/50 px-2 py-1 rounded border dark:border-gray-700 text-gray-400">Detaylar</span>
+                            <span className="text-3xs font-extrabold uppercase bg-black/10 dark:bg-black/20 text-current px-2 py-1 rounded border border-black/10 dark:border-white/10">Detaylar</span>
                           </div>
                         );
                       })}
@@ -516,11 +553,11 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
                                 {groups[dateStr].map((act) => {
                                   const actTime = new Date(act.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                                   let badgeClass = 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300';
-                                  if (act.type === 'Spor') badgeClass = 'bg-sky-50 text-sky-700 border border-sky-100 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900';
-                                  else if (act.type === 'Atölye') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900';
-                                  else if (act.type === 'Eğitim') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900';
-                                  else if (act.type === 'Seminer') badgeClass = 'bg-purple-50 text-purple-700 border border-purple-100 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-900';
-                                  else if (act.type === 'Eğlence') badgeClass = 'bg-pink-50 text-pink-700 border border-pink-100 dark:bg-pink-950/30 dark:text-pink-300 dark:border-pink-900';
+                                  if (act.type === 'Spor') badgeClass = 'bg-sky-500 text-white border border-sky-600 dark:bg-sky-600 dark:text-white dark:border-sky-700';
+                                  else if (act.type === 'Atölye') badgeClass = 'bg-amber-500 text-white border border-amber-600 dark:bg-amber-600 dark:text-white dark:border-amber-700';
+                                  else if (act.type === 'Eğitim') badgeClass = 'bg-emerald-500 text-white border border-emerald-600 dark:bg-emerald-600 dark:text-white dark:border-emerald-700';
+                                  else if (act.type === 'Seminer') badgeClass = 'bg-purple-500 text-white border border-purple-600 dark:bg-purple-600 dark:text-white dark:border-purple-700';
+                                  else if (act.type === 'Eğlence') badgeClass = 'bg-pink-500 text-white border border-pink-600 dark:bg-pink-600 dark:text-white dark:border-pink-700';
 
                                   return (
                                     <div
@@ -584,25 +621,25 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
               let iconColor = 'text-gray-500';
 
               if (act.type === 'Spor') {
-                headerBg = 'bg-sky-50 text-sky-950 border-sky-100 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-900';
-                typeBadge = 'bg-sky-100/80 text-sky-800 border-sky-200 dark:bg-sky-900/60 dark:text-sky-300 dark:border-sky-800';
-                iconColor = 'text-sky-600 dark:text-sky-400';
+                headerBg = 'bg-sky-500 text-white border-sky-600 dark:bg-sky-600 dark:text-white dark:border-sky-700';
+                typeBadge = 'bg-white/20 text-white border-white/30 dark:bg-white/10 dark:text-white dark:border-white/20';
+                iconColor = 'text-white';
               } else if (act.type === 'Atölye') {
-                headerBg = 'bg-amber-50 text-amber-950 border-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-900';
-                typeBadge = 'bg-amber-100/80 text-amber-800 border-amber-200 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-800';
-                iconColor = 'text-amber-600 dark:text-amber-400';
+                headerBg = 'bg-amber-500 text-white border-amber-600 dark:bg-amber-600 dark:text-white dark:border-amber-700';
+                typeBadge = 'bg-white/20 text-white border-white/30 dark:bg-white/10 dark:text-white dark:border-white/20';
+                iconColor = 'text-white';
               } else if (act.type === 'Eğitim') {
-                headerBg = 'bg-emerald-50 text-emerald-950 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-900';
-                typeBadge = 'bg-emerald-100/80 text-emerald-800 border-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-800';
-                iconColor = 'text-emerald-600 dark:text-emerald-400';
+                headerBg = 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600 dark:text-white dark:border-emerald-700';
+                typeBadge = 'bg-white/20 text-white border-white/30 dark:bg-white/10 dark:text-white dark:border-white/20';
+                iconColor = 'text-white';
               } else if (act.type === 'Seminer') {
-                headerBg = 'bg-purple-50 text-purple-950 border-purple-100 dark:bg-purple-950/40 dark:text-purple-200 dark:border-purple-900';
-                typeBadge = 'bg-purple-100/80 text-purple-800 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-800';
-                iconColor = 'text-purple-600 dark:text-purple-400';
+                headerBg = 'bg-purple-500 text-white border-purple-600 dark:bg-purple-600 dark:text-white dark:border-purple-700';
+                typeBadge = 'bg-white/20 text-white border-white/30 dark:bg-white/10 dark:text-white dark:border-white/20';
+                iconColor = 'text-white';
               } else if (act.type === 'Eğlence') {
-                headerBg = 'bg-pink-50 text-pink-950 border-pink-100 dark:bg-pink-950/40 dark:text-pink-200 dark:border-pink-900';
-                typeBadge = 'bg-pink-100/80 text-pink-800 border-pink-200 dark:bg-pink-900/60 dark:text-pink-300 dark:border-pink-800';
-                iconColor = 'text-pink-600 dark:text-pink-400';
+                headerBg = 'bg-pink-500 text-white border-pink-600 dark:bg-pink-600 dark:text-white dark:border-pink-700';
+                typeBadge = 'bg-white/20 text-white border-white/30 dark:bg-white/10 dark:text-white dark:border-white/20';
+                iconColor = 'text-white';
               }
 
               const handleCopyDetails = () => {

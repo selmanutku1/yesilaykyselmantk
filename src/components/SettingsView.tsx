@@ -7,8 +7,12 @@ import { useState, useEffect } from 'react';
 import { CampCenter, CampPeriod, SystemLog } from '../types';
 import { LoginUser } from '../App';
 import { 
+  Palette,
   Sliders,
-  Users, 
+  Users,
+  Sun,
+  Moon,
+  Monitor, 
   Building2, 
   Plus, 
   Trash2, 
@@ -31,6 +35,8 @@ import {
 } from 'lucide-react';
 
 interface SettingsViewProps {
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (t: 'light' | 'dark' | 'system') => void;
   currentUser: LoginUser;
   users: LoginUser[];
   onUpdateUsers: (updated: LoginUser[]) => void;
@@ -70,6 +76,8 @@ const ALL_TABS_LIST: { key: string; label: string; desc: string }[] = [
 ];
 
 export default function SettingsView({
+  theme,
+  setTheme,
   currentUser,
   users,
   onUpdateUsers,
@@ -109,6 +117,20 @@ export default function SettingsView({
     const saved = localStorage.getItem('kys_screensaver_timeout');
     return saved ? parseInt(saved) : 60; // default 60 seconds (1 minute)
   });
+
+  
+  // Theme state
+  const [colorPalette, setColorPalette] = useState(() => {
+    return localStorage.getItem('kys_color_palette') || 'emerald';
+  });
+
+  const handlePaletteChange = (paletteName) => {
+    setColorPalette(paletteName);
+    localStorage.setItem('kys_color_palette', paletteName);
+    window.dispatchEvent(new Event('kys_color_palette_changed'));
+    onAddLog('Tema Değiştirildi', `Sistem renk paleti '${paletteName}' olarak güncellendi.`);
+    triggerSuccess('Tema paleti başarıyla güncellendi.');
+  };
 
   // PWA Installation state
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -417,6 +439,72 @@ export default function SettingsView({
               </button>
             </div>
           </div>
+
+
+          {/* Aydınlık/Karanlık Mod Panel */}
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-xs space-y-4">
+            <h3 className="font-bold text-sm text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+              {theme === 'dark' ? <Moon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Sun className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+              Görünüm Modu
+            </h3>
+            <p className="text-2xs text-gray-500 dark:text-gray-400 leading-normal font-semibold">
+              Sistem arayüzünü gündüz (aydınlık), gece (karanlık) veya cihazınızın sistem ayarlarına uyumlu olacak şekilde ayarlayabilirsiniz.
+            </p>
+            <div className="flex bg-gray-100 dark:bg-gray-900 p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
+              <button
+                onClick={() => setTheme('light')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${theme === 'light' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Sun className="w-4 h-4" />
+                Aydınlık
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${theme === 'dark' ? 'bg-gray-700 text-emerald-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-300'}`}
+              >
+                <Moon className="w-4 h-4" />
+                Karanlık
+              </button>
+              <button
+                onClick={() => setTheme('system')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${theme === 'system' ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              >
+                <Monitor className="w-4 h-4" />
+                Sistem
+              </button>
+            </div>
+          </div>
+
+          {/* Theme Customizer Panel */}
+          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-xs space-y-4">
+            <h3 className="font-bold text-sm text-gray-900 pb-2 border-b flex items-center gap-2">
+              <Palette className="w-4 h-4 text-emerald-600" />
+              Tema Özelleştirici
+            </h3>
+            <p className="text-2xs text-gray-500 leading-normal font-semibold">
+              KYS uygulamasının ana renk paletini kurum kimliğinize veya kişisel zevkinize göre ayarlayın.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { name: 'Yeşilay (Zümrüt)', key: 'emerald', bgClass: 'bg-[#10b981]' },
+                { name: 'Okyanus (Mavi)', key: 'blue', bgClass: 'bg-[#3b82f6]' },
+                { name: 'Yakut (Kırmızı)', key: 'rose', bgClass: 'bg-[#f43f5e]' },
+                { name: 'Gece (Mor)', key: 'purple', bgClass: 'bg-[#a855f7]' },
+                { name: 'Güneş (Kehribar)', key: 'amber', bgClass: 'bg-[#f59e0b]' },
+                { name: 'Kurumsal (Arduvaz)', key: 'slate', bgClass: 'bg-[#64748b]' },
+              ].map(palette => (
+                <button
+                  key={palette.key}
+                  onClick={() => handlePaletteChange(palette.key)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition cursor-pointer ${colorPalette === palette.key ? 'border-gray-900 bg-gray-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+                >
+                  <span className={`w-4 h-4 rounded-full shadow-inner ${palette.bgClass}`}></span>
+                  <span className={`text-xs font-bold ${colorPalette === palette.key ? 'text-gray-900' : 'text-gray-600'}`}>{palette.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
 
                     {/* WhatsApp Business API Integration */}
           <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-xs space-y-4">

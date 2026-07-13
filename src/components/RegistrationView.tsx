@@ -942,6 +942,46 @@ export default function RegistrationView({
       weight: weight ? parseFloat(weight) : undefined,
     };
 
+    if (!navigator.onLine) {
+      const newId = `P-OFFLINE-${Date.now()}`;
+      if (!isRemote) {
+        const newParticipant = {
+          ...payload,
+          id: newId,
+          status: 'Başvuru Yapıldı',
+          bungalowId: null,
+          bedNumber: null,
+          groupId: null,
+          checkedIn: false
+        } as any;
+        onUpdateParticipants([...participants, newParticipant]);
+        onAddLog(
+          'Online Başvuru (Çevrimdışı)',
+          `${payload.name} (${payload.gender} - ${payload.category}) adlı gönüllü sistem tarafından çevrimdışı olarak kaydedildi. İl: ${payload.city}.`
+        );
+      } else {
+        const offlineQueue = JSON.parse(localStorage.getItem('kys_remote_queue') || '[]');
+        offlineQueue.push({ type: 'individual', payload });
+        localStorage.setItem('kys_remote_queue', JSON.stringify(offlineQueue));
+      }
+      alert('İnternet bağlantısı yok. Başvuru yerel olarak kaydedildi, bağlantı geldiğinde senkronize edilecek.');
+      setTcNo('');
+      setName('');
+      setBirthDate('');
+      setPhone('');
+      setEmail('');
+      setCategory('Lise');
+      setGender('Erkek');
+      setCity('');
+      setDistrict('');
+      setAddress('');
+      setHeight('');
+      setWeight('');
+      setKvkkChecked(false);
+      setConsentChecked(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/apply', {
         method: 'POST',
@@ -1119,6 +1159,56 @@ export default function RegistrationView({
       })),
       campPeriodId: convoyPeriodId
     };
+
+    if (!navigator.onLine) {
+      if (!isRemote) {
+        const leaderId = `PT-LDR-OFFLINE-${Date.now()}`;
+        const newLeader = {
+          ...convoyPayload.leader,
+          id: leaderId,
+          status: 'Başvuru Yapıldı',
+          bungalowId: null,
+          bedNumber: null,
+          campPeriodId: convoyPeriodId,
+          convoyName,
+          isConvoyLeader: true,
+          groupId: null,
+          checkedIn: false
+        } as any;
+        const newMembers = convoyPayload.members.map((member, idx) => ({
+          ...member,
+          id: `PT-MEM-OFFLINE-${Date.now()}-${idx}`,
+          status: 'Başvuru Yapıldı',
+          bungalowId: null,
+          bedNumber: null,
+          phone: convoyPayload.leader.phone,
+          email: convoyPayload.leader.email,
+          address: convoyPayload.leader.address || convoyName,
+          city: convoyPayload.leader.city,
+          district: convoyPayload.leader.district,
+          campPeriodId: convoyPeriodId,
+          convoyName,
+          isConvoyLeader: false,
+          convoyLeaderId: leaderId,
+          groupId: null,
+          checkedIn: false
+        })) as any[];
+        onUpdateParticipants([...participants, newLeader, ...newMembers]);
+        onAddLog(
+          'Online Kafile Başvurusu (Çevrimdışı)',
+          `'${convoyName}' kafilesi (${convoyPayload.leader.name} liderliğinde, ${convoyPayload.members.length} katılımcı) çevrimdışı kaydedildi.`
+        );
+      } else {
+        const offlineQueue = JSON.parse(localStorage.getItem('kys_remote_queue') || '[]');
+        offlineQueue.push({ type: 'convoy', payload: convoyPayload });
+        localStorage.setItem('kys_remote_queue', JSON.stringify(offlineQueue));
+      }
+      alert('İnternet bağlantısı yok. Kafile başvurusu yerel olarak kaydedildi, bağlantı geldiğinde senkronize edilecek.');
+      setConvoyName('');
+      setLeaderName('');
+      setConvoyMembers([]);
+      return;
+    }
 
     try {
       const res = await fetch('/api/apply', {

@@ -23,7 +23,8 @@ import {
   Plus,
   Eye,
   Settings,
-  AlertCircle
+  AlertCircle,
+  ClipboardList
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -35,6 +36,7 @@ import {
   ResponsiveContainer, 
   Tooltip as RechartsTooltip 
 } from 'recharts';
+import KampSonuDegerlendirmeRaporu from './KampSonuDegerlendirmeRaporu';
 
 interface SurveyAnalysisViewProps {
   participants: any[];
@@ -170,6 +172,7 @@ export default function SurveyAnalysisView({ participants, periods, onNavigateTo
   const [activeCategory, setActiveCategory] = useState<string | null>('Tesis'); // Default select Tesis for immediate beautiful visual feedback
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [showPrintWarning, setShowPrintWarning] = useState(false);
+  const [showReportView, setShowReportView] = useState(false);
 
   // Extract unique convoy names from participants, filtering out empty values
   const uniqueConvoys = Array.from(
@@ -237,7 +240,7 @@ export default function SurveyAnalysisView({ participants, periods, onNavigateTo
         onAddLog(
           'Memnuniyet Anketi Gönderildi', 
           `"${selectedConvoy}" grubundaki ${recipientCount} katılımcıya ${questions.length} soruluk memnuniyet anketi başarıyla gönderildi.`
-        );
+  );
       }
     }, 1500);
   };
@@ -439,6 +442,13 @@ export default function SurveyAnalysisView({ participants, periods, onNavigateTo
         </div>
         <div className="flex gap-2">
            <button 
+             onClick={() => setShowReportView(!showReportView)}
+             className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-amber-700 transition cursor-pointer"
+           >
+             <ClipboardList className="w-4 h-4" />
+             {showReportView ? 'Analize Dön' : 'Kamp Sonu Raporu Formu'}
+           </button>
+           <button 
              onClick={() => setIsPdfModalOpen(true)}
              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-emerald-700 transition cursor-pointer"
            >
@@ -455,164 +465,530 @@ export default function SurveyAnalysisView({ participants, periods, onNavigateTo
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Main Chart Card */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-indigo-600" />
-                  Kategori Bazlı Memnuniyet Dağılımı
-                </h3>
+      {showReportView ? (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <KampSonuDegerlendirmeRaporu />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Main Chart Card */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-600" />
+                    Kategori Bazlı Memnuniyet Dağılımı
+                  </h3>
+                </div>
+              </div>
+              
+              <div className="h-72 w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dynamicChartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 'bold' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dx={-10} domain={[0, 100]} />
+                    <RechartsTooltip 
+                      cursor={{ fill: 'rgba(79, 70, 229, 0.04)' }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)' }}
+                    />
+                    <Bar 
+                      dataKey="Memnuniyet (%)" 
+                      radius={[6, 6, 0, 0]} 
+                      barSize={45}
+                      onClick={(data) => {
+                        if (data && data.name) {
+                          setActiveCategory(activeCategory === data.name ? null : data.name);
+                        }
+                      }}
+                    >
+                      {dynamicChartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={activeCategory === entry.name ? '#10b981' : '#4f46e5'} 
+                          className="cursor-pointer hover:opacity-85 transition-opacity"
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
-            
-            <div className="h-72 w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dynamicChartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 'bold' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dx={-10} domain={[0, 100]} />
-                  <RechartsTooltip 
-                    cursor={{ fill: 'rgba(79, 70, 229, 0.04)' }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)' }}
-                  />
-                  <Bar 
-                    dataKey="Memnuniyet (%)" 
-                    radius={[6, 6, 0, 0]} 
-                    barSize={45}
-                    onClick={(data) => {
-                      if (data && data.name) {
-                        setActiveCategory(activeCategory === data.name ? null : data.name);
-                      }
-                    }}
+
+            {/* Click Details Card */}
+            {activeCategory && (
+              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm animate-in slide-in-from-bottom-2 duration-200">
+                <div className="flex justify-between items-start mb-5 border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100/50">
+                      {getCategoryIcon(activeCategory)}
+                    </div>
+                    <div>
+                      <h4 className="text-base font-black text-gray-900 flex items-center gap-2">
+                        {categoryDetailsMap[activeCategory]?.label || activeCategory} Detay Analizi
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {categoryDetailsMap[activeCategory]?.description}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setActiveCategory(null)}
+                    className="text-gray-400 hover:text-gray-600 transition p-1 hover:bg-gray-50 rounded-lg"
+                    title="Detayı Kapat"
                   >
-                    {dynamicChartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={activeCategory === entry.name ? '#10b981' : '#4f46e5'} 
-                        className="cursor-pointer hover:opacity-85 transition-opacity"
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+                  {/* Score Summary Block */}
+                  <div className="flex flex-col items-center justify-center p-4 bg-indigo-50/30 border border-indigo-100/50 rounded-xl text-center">
+                    <span className="text-[10px] font-black text-indigo-650 uppercase tracking-widest">Kategori Ortalaması</span>
+                    <div className="mt-2.5 flex items-baseline gap-1">
+                      <span className="text-5xl font-black text-indigo-950">{getCategoryStats(activeCategory).average}</span>
+                      <span className="text-base font-bold text-indigo-450">/ 5</span>
+                    </div>
+                    <div className="mt-2 flex gap-0.5 justify-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Sparkles 
+                          key={i} 
+                          className={`w-4 h-4 ${i < Math.round(getCategoryStats(activeCategory).average) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-gray-500 font-bold mt-3">
+                      Toplam {getCategoryStats(activeCategory).totalCount} anket değerlendirmesi
+                    </span>
+                  </div>
+
+                  {/* Stars Breakdown progress bars */}
+                  <div className="md:col-span-2 space-y-2.5 flex flex-col justify-center">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Puan Dağılım Grafiği</span>
+                    {[5, 4, 3, 2, 1].map((rating) => {
+                      const stats = getCategoryStats(activeCategory);
+                      const count = stats.counts[rating] || 0;
+                      const percentage = stats.totalCount > 0 ? Math.round((count / stats.totalCount) * 100) : 0;
+                      return (
+                        <div key={rating} className="flex items-center gap-3 text-xs">
+                          <span className="w-12 font-bold text-gray-600 shrink-0 flex items-center gap-1 justify-end">
+                            {rating} <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                          </span>
+                          <div className="flex-1 h-3 bg-gray-100 rounded-lg overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-600 rounded-lg transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="w-16 text-right text-gray-500 font-bold shrink-0">{count} kişi ({percentage}%)</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Dynamic Comments specifically for this category */}
+                <div className="mt-6 border-t border-gray-100 pt-5">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <MessageSquare className="w-4 h-4 text-indigo-600" />
+                    <span className="text-2xs font-black text-gray-400 uppercase tracking-widest">
+                      Katılımcı Yorumları & Bu Kategori Puanları
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                    {filteredSurveys.map((survey) => {
+                      const catKey = categoryDetailsMap[activeCategory]?.key;
+                      const score = survey[catKey as keyof typeof survey];
+                      return (
+                        <div key={survey.id} className="p-3 bg-gray-50/50 hover:bg-gray-50 border border-gray-150 rounded-xl transition flex justify-between items-start gap-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span 
+                                className="text-xs font-bold text-gray-900 hover:text-indigo-600 hover:underline cursor-pointer"
+                                onClick={(e) => handleNameClick(e, survey.name)}
+                              >
+                                {survey.name}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-medium">• {survey.camp}</span>
+                            </div>
+                            <p className="text-xs text-gray-600 italic">
+                              "{survey.feedback}"
+                            </p>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-1 px-2 py-1 bg-white border border-gray-150 rounded-lg shadow-3xs">
+                            <span className="text-xs font-black text-indigo-700">{score}</span>
+                            <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Anket Gönderim & Soru Yönetim Portalı */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative space-y-6">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Send className="w-5 h-5 text-indigo-600 animate-pulse" />
+                  Anket Gönderim & Soru Yönetim Paneli
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Katılımcı ve kafile gruplarına özel memnuniyet anketleri tasarlayın, canlı önizleyin ve anında gönderin.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                {/* Left Column: Config & Question CRUD */}
+                <div className="xl:col-span-7 space-y-6">
+                  
+                  {/* Cohort Group Selection */}
+                  <div className="space-y-2">
+                    <span className="block text-3xs font-extrabold text-gray-400 tracking-wider uppercase">Hedef Kafile / Katılımcı Grubu Seçin</span>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="relative flex-1">
+                        <select
+                          value={selectedConvoy}
+                          onChange={(e) => {
+                            setSelectedConvoy(e.target.value);
+                            setSurveySendResult(null);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs text-gray-700 bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer font-bold"
+                        >
+                          {availableConvoys.map((conv, idx) => (
+                            <option key={idx} value={conv}>{conv}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-150 rounded-xl text-xs text-indigo-700 font-bold justify-center">
+                        <Users className="w-4 h-4 shrink-0" />
+                        <span>
+                          {selectedConvoy.toLowerCase().includes("tüm") 
+                            ? `${participants?.length || 148} Katılımcı` 
+                            : `${participants?.filter(p => p.convoyName === selectedConvoy).length || 15} Kişi`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Soru Ekleme Formu */}
+                  <div className="space-y-2">
+                    <span className="block text-3xs font-extrabold text-gray-400 tracking-wider uppercase">Yeni Değerlendirme Sorusu Ekle</span>
+                    <form onSubmit={handleAddQuestion} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Örn: Kamp liderlerinin rehberliğini nasıl buluyorsunuz?..."
+                        value={newQuestionText}
+                        onChange={(e) => setNewQuestionText(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-400"
                       />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" /> Ekle
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Soru Düzenleme Listesi */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="block text-3xs font-extrabold text-gray-400 tracking-wider uppercase">Mevcut Anket Soruları ({questions.length})</span>
+                      {questions.length === 0 && (
+                        <span className="text-3xs text-rose-500 font-bold">Lütfen en az bir soru ekleyin</span>
+                      )}
+                    </div>
+                    <div className="max-h-72 overflow-y-auto space-y-2 pr-1 border border-gray-150 rounded-xl p-3 bg-gray-50/50">
+                      {questions.map((q, index) => {
+                        const isEditing = editingQuestionIndex === index;
+                        return (
+                          <div key={index} className="transition-all">
+                            {isEditing ? (
+                              <div className="flex items-center gap-2 bg-white p-2.5 border border-indigo-200 rounded-xl shadow-3xs animate-in fade-in duration-200">
+                                <input
+                                  type="text"
+                                  value={editingQuestionText}
+                                  onChange={(e) => setEditingQuestionText(e.target.value)}
+                                  className="flex-1 px-2.5 py-1.5 border border-indigo-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-indigo-50/5"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => saveEditedQuestion(index)}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-3xs shrink-0 cursor-pointer"
+                                >
+                                  Kaydet
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingQuestionIndex(null)}
+                                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold shrink-0 cursor-pointer"
+                                >
+                                  İptal
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-3 bg-white p-3 border border-gray-150 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/5 transition-all group shadow-3xs">
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  <span className="w-5 h-5 shrink-0 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-700 text-[10px] font-black flex items-center justify-center">
+                                    {index + 1}
+                                  </span>
+                                  <span className="text-xs text-gray-700 font-semibold leading-relaxed">
+                                    {q}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditingQuestion(index)}
+                                    className="p-1.5 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-700 rounded-lg transition cursor-pointer"
+                                    title="Soruyu Düzenle"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteQuestion(index)}
+                                    className="p-1.5 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-lg transition cursor-pointer"
+                                    title="Soruyu Sil"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {questions.length === 0 && (
+                        <div className="text-center py-8 text-xs text-gray-400 font-bold bg-white rounded-xl border border-dashed border-gray-200">
+                          Henüz anket sorusu bulunmuyor. Lütfen yeni bir soru yazıp ekleyin.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dispatch Controls & Status */}
+                  <div className="border-t border-gray-100 pt-5 flex flex-col sm:flex-row items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSendSurvey}
+                      disabled={isSendingSurvey || questions.length === 0}
+                      className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {isSendingSurvey ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                          <span>Anket Dağıtılıyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Anketi Seçilen Gruba Gönder</span>
+                        </>
+                      )}
+                    </button>
+                    
+                    {surveySendResult && (
+                      <div className="flex-1 w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div className="text-[11px] text-emerald-800 font-bold leading-relaxed">
+                          Anket başarıyla gönderildi! <strong className="text-emerald-950 font-extrabold">{surveySendResult.convoy}</strong> grubundaki <strong className="text-emerald-950 font-extrabold">{surveySendResult.count}</strong> katılımcıya SMS ve sistem bildirimi yoluyla iletildi.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+
+                {/* Right Column: Interactive Smartphone Mockup Preview */}
+                <div className="xl:col-span-5 bg-slate-50 p-4 border border-gray-100 rounded-2xl flex flex-col items-center justify-center min-h-[460px]">
+                  <div className="flex items-center gap-1.5 mb-4 shrink-0 text-gray-500 self-start">
+                    <Eye className="w-4 h-4 text-indigo-500" />
+                    <span className="text-3xs font-extrabold tracking-wider uppercase">Mobil Katılımcı Anketi Canlı Önizlemesi</span>
+                  </div>
+
+                  {/* Smartphone Shell Mockup */}
+                  <div className="w-full max-w-[280px] border-[6px] border-slate-800 rounded-[2.2rem] bg-white p-2.5 shadow-lg relative overflow-hidden flex flex-col h-[420px] transition-all hover:shadow-xl shrink-0">
+                    {/* Smartphone camera notch */}
+                    <div className="w-20 h-3.5 bg-slate-800 rounded-b-xl mx-auto absolute top-0 left-1/2 -translate-x-1/2 z-10" />
+                    
+                    {/* Phone Header */}
+                    <div className="bg-emerald-700 text-white p-3 rounded-t-[1.6rem] text-center shrink-0 flex flex-col items-center pt-5">
+                      <div className="w-6 h-6 mb-1">
+                        <svg viewBox="0 0 100 100" className="w-full h-full">
+                          <path d="M52,15 A35,35 0 1,0 85,68 A28,28 0 1,1 85,32 A35,35 0 0,0 52,15 Z" fill="#10B981" />
+                        </svg>
+                      </div>
+                      <h4 className="text-[9px] font-black tracking-widest uppercase leading-none">T.C. YEŞİLAY CEMİYETİ</h4>
+                      <span className="text-[8px] text-emerald-100 font-semibold mt-0.5 leading-none">Gençlik Kampları Değerlendirme Anketi</span>
+                    </div>
+
+                    {/* Phone Screen Content - Scrollable */}
+                    <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3 bg-slate-50 text-left text-[10px]">
+                      <div className="bg-indigo-50 border border-indigo-100 text-center text-[8px] text-indigo-800 font-semibold p-2 rounded-lg leading-relaxed">
+                        Sevgili Katılımcı, kamp deneyiminizi iyileştirebilmemiz için lütfen aşağıdaki soruları 1-5 yeşil hilal arası değerlendiriniz.
+                      </div>
+
+                      {questions.map((q, idx) => (
+                        <div key={idx} className="space-y-1.5 bg-white p-2.5 rounded-lg border border-gray-200/60 shadow-3xs">
+                          <div className="font-bold text-gray-800 leading-tight">
+                            {idx + 1}. {q}
+                          </div>
+                          <div className="flex gap-1 justify-start">
+                            {[1,2,3,4,5].map((star) => (
+                              <svg key={star} viewBox="0 0 100 100" className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600 opacity-90 cursor-pointer hover:scale-115 transition-transform shrink-0">
+                                <path d="M52,15 A35,35 0 1,0 85,68 A28,28 0 1,1 85,32 A35,35 0 0,0 52,15 Z" />
+                              </svg>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="space-y-1 bg-white p-2.5 rounded-lg border border-gray-200/60 shadow-3xs">
+                        <label className="font-bold text-gray-800 block">Ek Görüş ve Önerileriniz</label>
+                        <textarea 
+                          disabled 
+                          placeholder="Örn: Yemekler harikaydı, her şey için teşekkürler..." 
+                          className="w-full h-14 p-1.5 border border-gray-200 rounded-lg text-[8px] resize-none bg-gray-50 focus:outline-none placeholder-gray-300" 
+                        />
+                      </div>
+                      
+                      <button type="button" disabled className="w-full py-2 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wider text-center cursor-not-allowed opacity-90">
+                        Değerlendirmeyi Tamamla
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            {/* Participant Reviews Grid with minimal layout & average scores */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                  Katılımcı Görüşleri
+                </h3>
+                <select
+                  value={filterCamp}
+                  onChange={(e) => setFilterCamp(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer font-bold"
+                >
+                  <option value="Tümü">Tüm Kamplar</option>
+                  <option value="Antalya / Sarısu Gençlik Kampı">Antalya / Sarısu Gençlik Kampı</option>
+                  <option value="Sakarya / Pamukova Gençlik Kampı">Sakarya / Pamukova Gençlik Kampı</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredSurveys.map((item) => {
+                  const avgScore = getParticipantAverage(item);
+                  return (
+                    <div 
+                      key={item.id} 
+                      className="bg-white border border-gray-150 rounded-xl p-4 shadow-3xs cursor-pointer hover:border-indigo-300 hover:shadow-sm transition-all group flex flex-col justify-between"
+                      onClick={() => setSelectedSurveyDetail(item)}
+                    >
+                      <div className="flex justify-between items-start gap-3 mb-3 pb-3 border-b border-gray-100">
+                        <div className="min-w-0">
+                          <h4 
+                            className="font-bold text-gray-900 text-sm hover:text-indigo-600 hover:underline transition-colors cursor-pointer truncate"
+                            onClick={(e) => handleNameClick(e, item.name)}
+                          >
+                            {item.name}
+                          </h4>
+                          <p className="text-[10px] text-gray-500 truncate mt-0.5">{item.camp}</p>
+                          <p className="text-[9px] text-gray-400 font-medium">{item.period} • {item.date}</p>
+                        </div>
+                        
+                        {/* Compact Average Score Pill */}
+                        <div className="flex items-center gap-1 bg-indigo-50/80 border border-indigo-100 text-indigo-700 px-2 py-1 rounded-lg text-xs font-black shadow-3xs shrink-0" title="Ortalama Puan">
+                          <span>{avgScore}</span>
+                          <Sparkles className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-50/60 p-2.5 rounded-lg border border-gray-100/80">
+                        <p className="text-xs text-gray-600 italic line-clamp-2 leading-relaxed">
+                          "{item.feedback}"
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredSurveys.length === 0 && (
+                  <div className="col-span-2 text-center py-8 text-gray-500 text-sm font-medium">
+                    Bu kampa ait anket sonucu bulunamadı.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Click Details Card */}
-          {activeCategory && (
-            <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm animate-in slide-in-from-bottom-2 duration-200">
-              <div className="flex justify-between items-start mb-5 border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100/50">
-                    {getCategoryIcon(activeCategory)}
-                  </div>
-                  <div>
-                    <h4 className="text-base font-black text-gray-900 flex items-center gap-2">
-                      {categoryDetailsMap[activeCategory]?.label || activeCategory} Detay Analizi
-                    </h4>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {categoryDetailsMap[activeCategory]?.description}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setActiveCategory(null)}
-                  className="text-gray-400 hover:text-gray-600 transition p-1 hover:bg-gray-50 rounded-lg"
-                  title="Detayı Kapat"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          
+          {/* Right column: overall scores and achievements */}
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white shadow-lg">
+              <h3 className="text-indigo-100 font-medium text-sm mb-1 uppercase tracking-wider">Genel Memnuniyet Skoru</h3>
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-5xl font-black">{calculateOverallCampScore()}</span>
+                <span className="text-indigo-200 font-bold">/ 100</span>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-                {/* Score Summary Block */}
-                <div className="flex flex-col items-center justify-center p-4 bg-indigo-50/30 border border-indigo-100/50 rounded-xl text-center">
-                  <span className="text-[10px] font-black text-indigo-650 uppercase tracking-widest">Kategori Ortalaması</span>
-                  <div className="mt-2.5 flex items-baseline gap-1">
-                    <span className="text-5xl font-black text-indigo-950">{getCategoryStats(activeCategory).average}</span>
-                    <span className="text-base font-bold text-indigo-450">/ 5</span>
-                  </div>
-                  <div className="mt-2 flex gap-0.5 justify-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Sparkles 
-                        key={i} 
-                        className={`w-4 h-4 ${i < Math.round(getCategoryStats(activeCategory).average) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} 
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-gray-500 font-bold mt-3">
-                    Toplam {getCategoryStats(activeCategory).totalCount} anket değerlendirmesi
-                  </span>
+              
+              <div className="space-y-3">
+                <div className="bg-white/10 rounded-lg p-3 flex justify-between items-center backdrop-blur-sm border border-white/10">
+                  <span className="text-sm">Toplam Anket Sayısı</span>
+                  <span className="font-bold text-lg">1,248</span>
                 </div>
-
-                {/* Stars Breakdown progress bars */}
-                <div className="md:col-span-2 space-y-2.5 flex flex-col justify-center">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Puan Dağılım Grafiği</span>
-                  {[5, 4, 3, 2, 1].map((rating) => {
-                    const stats = getCategoryStats(activeCategory);
-                    const count = stats.counts[rating] || 0;
-                    const percentage = stats.totalCount > 0 ? Math.round((count / stats.totalCount) * 100) : 0;
-                    return (
-                      <div key={rating} className="flex items-center gap-3 text-xs">
-                        <span className="w-12 font-bold text-gray-600 shrink-0 flex items-center gap-1 justify-end">
-                          {rating} <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
-                        </span>
-                        <div className="flex-1 h-3 bg-gray-100 rounded-lg overflow-hidden">
-                          <div 
-                            className="h-full bg-indigo-600 rounded-lg transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="w-16 text-right text-gray-500 font-bold shrink-0">{count} kişi ({percentage}%)</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Dynamic Comments specifically for this category */}
-              <div className="mt-6 border-t border-gray-100 pt-5">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <MessageSquare className="w-4 h-4 text-indigo-600" />
-                  <span className="text-2xs font-black text-gray-400 uppercase tracking-widest">
-                    Katılımcı Yorumları & Bu Kategori Puanları
-                  </span>
-                </div>
-                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                  {filteredSurveys.map((survey) => {
-                    const catKey = categoryDetailsMap[activeCategory]?.key;
-                    const score = survey[catKey as keyof typeof survey];
-                    return (
-                      <div key={survey.id} className="p-3 bg-gray-50/50 hover:bg-gray-50 border border-gray-150 rounded-xl transition flex justify-between items-start gap-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span 
-                              className="text-xs font-bold text-gray-900 hover:text-indigo-600 hover:underline cursor-pointer"
-                              onClick={(e) => handleNameClick(e, survey.name)}
-                            >
-                              {survey.name}
-                            </span>
-                            <span className="text-[10px] text-gray-400 font-medium">• {survey.camp}</span>
-                          </div>
-                          <p className="text-xs text-gray-600 italic">
-                            "{survey.feedback}"
-                          </p>
-                        </div>
-                        <div className="shrink-0 flex items-center gap-1 px-2 py-1 bg-white border border-gray-150 rounded-lg shadow-3xs">
-                          <span className="text-xs font-black text-indigo-700">{score}</span>
-                          <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="bg-white/10 rounded-lg p-3 flex justify-between items-center backdrop-blur-sm border border-white/10">
+                  <span className="text-sm">Öneri Bırakan</span>
+                  <span className="font-bold text-lg">842</span>
                 </div>
               </div>
             </div>
-          )}
+
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+              <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+                Öne Çıkan Başarılar
+              </h3>
+              <ul className="space-y-4">
+                <li className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Güvenlik Hizmetleri</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Katılımcıların %98'i güvenlik önlemlerinden çok memnun.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Lider İletişimi</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Liderlerin ilgi ve alakası en yüksek 2. memnuniyet oranına sahip.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Eğitim İçerikleri</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Eğitimlerin kalitesi ve anlaşılırlığı beklentilerin üzerinde.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
 
           {/* Anket Gönderim & Soru Yönetim Portalı */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative space-y-6">
@@ -852,127 +1228,6 @@ export default function SurveyAnalysisView({ participants, periods, onNavigateTo
             </div>
           </div>
 
-          {/* Participant Reviews Grid with minimal layout & average scores */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-indigo-600" />
-                Katılımcı Görüşleri
-              </h3>
-              <select
-                value={filterCamp}
-                onChange={(e) => setFilterCamp(e.target.value)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer font-bold"
-              >
-                <option value="Tümü">Tüm Kamplar</option>
-                <option value="Antalya / Sarısu Gençlik Kampı">Antalya / Sarısu Gençlik Kampı</option>
-                <option value="Sakarya / Pamukova Gençlik Kampı">Sakarya / Pamukova Gençlik Kampı</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredSurveys.map((item) => {
-                const avgScore = getParticipantAverage(item);
-                return (
-                  <div 
-                    key={item.id} 
-                    className="bg-white border border-gray-150 rounded-xl p-4 shadow-3xs cursor-pointer hover:border-indigo-300 hover:shadow-sm transition-all group flex flex-col justify-between"
-                    onClick={() => setSelectedSurveyDetail(item)}
-                  >
-                    <div className="flex justify-between items-start gap-3 mb-3 pb-3 border-b border-gray-100">
-                      <div className="min-w-0">
-                        <h4 
-                          className="font-bold text-gray-900 text-sm hover:text-indigo-600 hover:underline transition-colors cursor-pointer truncate"
-                          onClick={(e) => handleNameClick(e, item.name)}
-                        >
-                          {item.name}
-                        </h4>
-                        <p className="text-[10px] text-gray-500 truncate mt-0.5">{item.camp}</p>
-                        <p className="text-[9px] text-gray-400 font-medium">{item.period} • {item.date}</p>
-                      </div>
-                      
-                      {/* Compact Average Score Pill */}
-                      <div className="flex items-center gap-1 bg-indigo-50/80 border border-indigo-100 text-indigo-700 px-2 py-1 rounded-lg text-xs font-black shadow-3xs shrink-0" title="Ortalama Puan">
-                        <span>{avgScore}</span>
-                        <Sparkles className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50/60 p-2.5 rounded-lg border border-gray-100/80">
-                      <p className="text-xs text-gray-600 italic line-clamp-2 leading-relaxed">
-                        "{item.feedback}"
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              {filteredSurveys.length === 0 && (
-                <div className="col-span-2 text-center py-8 text-gray-500 text-sm font-medium">
-                  Bu kampa ait anket sonucu bulunamadı.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right column: overall scores and achievements */}
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white shadow-lg">
-            <h3 className="text-indigo-100 font-medium text-sm mb-1 uppercase tracking-wider">Genel Memnuniyet Skoru</h3>
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-5xl font-black">{calculateOverallCampScore()}</span>
-              <span className="text-indigo-200 font-bold">/ 100</span>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="bg-white/10 rounded-lg p-3 flex justify-between items-center backdrop-blur-sm border border-white/10">
-                <span className="text-sm">Toplam Anket Sayısı</span>
-                <span className="font-bold text-lg">1,248</span>
-              </div>
-              <div className="bg-white/10 rounded-lg p-3 flex justify-between items-center backdrop-blur-sm border border-white/10">
-                <span className="text-sm">Öneri Bırakan</span>
-                <span className="font-bold text-lg">842</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
-              Öne Çıkan Başarılar
-            </h3>
-            <ul className="space-y-4">
-              <li className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900">Güvenlik Hizmetleri</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">Katılımcıların %98'i güvenlik önlemlerinden çok memnun.</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900">Lider İletişimi</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">Liderlerin ilgi ve alakası en yüksek 2. memnuniyet oranına sahip.</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900">Eğitim İçerikleri</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">Eğitimlerin kalitesi ve anlaşılırlığı beklentilerin üzerinde.</p>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
       {/* Survey Detail Modal (All 7 fields included + etkinlik) */}
       {selectedSurveyDetail && (

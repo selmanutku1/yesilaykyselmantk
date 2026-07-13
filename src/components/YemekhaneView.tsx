@@ -18,10 +18,12 @@ import {
   Printer,
   FileText,
   Download,
-  Clock
+  Clock,
+  BookOpenText
 } from 'lucide-react';
 import { MealPlan, Participant, InventoryItem, DailyMenu, Task, ShiftAssignment } from '../types';
 import { INITIAL_INVENTORY, INITIAL_WEEKLY_MENU } from '../data';
+import ReferansMenulerView from './ReferansMenulerView';
 
 interface YemekhaneViewProps {
   participants: Participant[];
@@ -116,7 +118,7 @@ export default function YemekhaneView({
   const [isDietReportOpen, setIsDietReportOpen] = useState(false);
 
   // New states for Inventory and Weekly Auto Menu
-  const [activeTab, setActiveTab] = useState<'gunluk' | 'haftalik' | 'depo'>('gunluk');
+  const [activeTab, setActiveTab] = useState<'gunluk' | 'haftalik' | 'depo' | 'referans'>('gunluk');
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [weeklyMenu, setWeeklyMenu] = useState<DailyMenu[]>(INITIAL_WEEKLY_MENU);
 
@@ -451,7 +453,19 @@ export default function YemekhaneView({
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 font-sans">
             <UtensilsCrossed className="w-5 h-5 text-emerald-600 animate-pulse" />
-            Yemekhane &amp; Gıda İhtiyacı Planlama
+            Yemekhane Yönetimi
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Mutfak operasyonları, depo yönetimi ve genel yemekhane işleyişi.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 font-sans">
+            <CalendarDays className="w-5 h-5 text-emerald-600 animate-pulse" />
+            Öğün Planlama
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             Gönüllü gıda alerjilerine, diyet tercihlerine göre porsiyon kontrolü ve dinamik menü yönetimi.
@@ -504,7 +518,18 @@ export default function YemekhaneView({
           <PackageSearch className="w-4 h-4" />
           Depo & Erzak Stok
         </button>
+        <button
+          onClick={() => setActiveTab('referans')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'referans' ? 'bg-emerald-700 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          <BookOpenText className="w-4 h-4" />
+          Referans Menüler
+        </button>
       </div>
+
+      {activeTab === 'referans' && <ReferansMenulerView />}
 
       {activeTab === 'gunluk' && (
         <>

@@ -212,6 +212,8 @@ export interface Task {
   dueDate: string; // Date and Time
   status: 'Bekliyor' | 'Devam Ediyor' | 'Tamamlandı';
   priority: 'Düşük' | 'Orta' | 'Yüksek' | 'Kritik';
+  imageUrl?: string;
+  history?: { date: string; user: string; action: string; note?: string }[];
 }
 
 export interface ShiftAssignment {

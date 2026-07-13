@@ -14,11 +14,12 @@ import {
   SquarePlay, 
   FileText,
   Lock,
-  Network
+  Network,
+  UtensilsCrossed
 } from 'lucide-react';
 
 export default function DocumentationTab() {
-  const [subTab, setSubTab] = useState<'analiz' | 'veritabani_api' | 'matris_senaryo' | 'mimari_kvkk'>('analiz');
+  const [subTab, setSubTab] = useState<'analiz' | 'veritabani_api' | 'matris_senaryo' | 'mimari_kvkk' | 'menu_standartlari'>('analiz');
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden" id="yesilay-documentation-container">
@@ -69,6 +70,15 @@ export default function DocumentationTab() {
           >
             <ShieldCheck className="w-4 h-4" />
             4. Güvenlik, SaaS & KVKK
+          </button>
+          <button
+            onClick={() => setSubTab('menu_standartlari')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              subTab === 'menu_standartlari' ? 'bg-white text-emerald-900 shadow-sm' : 'bg-emerald-700/50 text-white hover:bg-emerald-700'
+            }`}
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            5. Menü Standartları
           </button>
         </div>
       </div>
@@ -536,6 +546,50 @@ export default function DocumentationTab() {
               <h4 className="font-bold text-red-900 text-sm mb-2">Hukuki Altyapı ve Veri Saklama Koşulları</h4>
               <p className="text-xs text-gray-650">
                 Ön başvuru ve katılım taahhütnameleri sisteme yüklenirken time-stamp (zaman damgası) ile damgalanmaktadır. Katılımcı kamptan ayrıldıktan veya dönem tamamlandıktan 2 yıl sonra KVKK Veri İmha Politikası kapsamında kişisel veriler anonimleştirilerek istatistiksel raporlarda saklanır, ham kişisel veriler tamamen imha edilir.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* SUBTAB 5: MENÜ STANDARTLARI */}
+        {subTab === 'menu_standartlari' && (
+          <div className="space-y-6 animate-fade-in text-gray-700 leading-relaxed font-sans">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2 border-b pb-2">
+                <span className="w-2 h-6 bg-emerald-600 rounded-full inline-block"></span>
+                Yeşilay Menü Standartları Kılavuzu
+              </h3>
+              <p className="text-sm text-gray-650">
+                Yeşilay kamp merkezlerinde uygulanan beslenme standartları, katılımcıların sağlıklı gelişimini desteklemek, alerjen hassasiyetlerini yönetmek ve gıda israfını minimize etmek amacıyla oluşturulmuştur.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+              <div className="border border-gray-100 p-5 rounded-xl bg-gray-50/50">
+                <h4 className="font-bold text-emerald-900 flex items-center gap-2 mb-2">
+                  <UtensilsCrossed className="w-5 h-5 text-emerald-600" />
+                  Beslenme İlkeleri
+                </h4>
+                <p className="text-xs text-gray-650">
+                  Her öğün; karbonhidrat, protein, yağ ve lif dengesini gözeterek planlanır. İşlenmiş gıdalardan kaçınılır, mevsimsel ve yerel ürün kullanımı teşvik edilir. Günlük kalori ihtiyacı yaş gruplarına göre optimize edilir.
+                </p>
+              </div>
+
+              <div className="border border-gray-100 p-5 rounded-xl bg-gray-50/50">
+                <h4 className="font-bold text-emerald-900 flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  Alerjen Yönetimi
+                </h4>
+                <p className="text-xs text-gray-650">
+                  Katılımcıların gıda alerjileri (glüten, laktoz, kuruyemiş vb.) sisteme işlenir. Yemekhane yönetimi, alerjik reaksiyon riskini sıfıra indirmek için etiketleme ve ayrı servis hatları kurallarına sıkı sıkıya bağlı kalır.
+                </p>
+              </div>
+            </div>
+
+            <div className="border border-emerald-50 p-5 rounded-xl bg-emerald-50/20">
+              <h4 className="font-bold text-emerald-900 text-sm mb-2">Gıda İsrafını Önleme</h4>
+              <p className="text-xs text-gray-650">
+                Yoklama istatistikleri ve yemek talepleri eş zamanlı izlenerek, gereksiz porsiyon hazırlığı engellenir. "Önce İhtiyaç" ilkesiyle günlük üretim planı dinamik olarak güncellenir.
               </p>
             </div>
           </div>

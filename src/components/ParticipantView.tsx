@@ -5,7 +5,7 @@ import { generateWhatsAppLink, sendWhatsAppNotification } from '../utils/whatsap
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageCircle, useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Participant, Group, CampPeriod } from "../types";
 import {
   Users,
@@ -30,6 +30,7 @@ import {
   ChevronUp,
   LayoutGrid,
   List,
+  MessageCircle,
 } from "lucide-react";
 import {
   exportToWord,
@@ -530,13 +531,22 @@ export default function ParticipantView({
     groupName: string,
     groupColor: string,
   ) => {
+    if (window.self !== window.top) {
+      setShowPrintWarning(true);
+      return;
+    }
     const badgeHtml = `
-      <html>
-        <head>
-          <title>Yeşilay Kamp Katılım Kartı - ${p.name}</title>
           <style>
+            #print-section {
+              background-color: white;
+              width: 100%;
+              height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-            body {
+            #print-section * {
               font-family: 'Inter', sans-serif;
               margin: 0;
               padding: 0;
@@ -711,8 +721,6 @@ export default function ParticipantView({
               width: 100px;
             }
           </style>
-        </head>
-        <body>
           <div class="badge-card">
             <div class="badge-header">
               <svg viewBox="0 0 100 100">
@@ -726,7 +734,7 @@ export default function ParticipantView({
             
             <div class="badge-body">
               <div class="avatar-container">
-                ${p.name
+                ${(p.name || "")
                   .split(" ")
                   .map((n) => n[0])
                   .join("")
@@ -752,7 +760,7 @@ export default function ParticipantView({
                 </div>
                 <div class="info-row">
                   <span class="info-label">Kimlik / TC</span>
-                  <span class="info-value" style="font-family: monospace;">${p.identityNumber.slice(0, 3)}******${p.identityNumber.slice(-2)}</span>
+                  <span class="info-value" style="font-family: monospace;">${p.identityNumber ? p.identityNumber.slice(0, 3) + "******" + p.identityNumber.slice(-2) : "GİRİLMEDİ"}</span>
                 </div>
               </div>
             </div>
@@ -791,8 +799,6 @@ export default function ParticipantView({
               </svg>
             </div>
           </div>
-        </body>
-      </html>
     `;
 
     // High reliability printing using print-section approach
@@ -814,6 +820,10 @@ export default function ParticipantView({
   };
 
   const handlePrintBulkBadges = () => {
+    if (window.self !== window.top) {
+      setShowPrintWarning(true);
+      return;
+    }
     const selectedParticipantsList = participants.filter((p) =>
       selectedForBulk.includes(p.id)
     );
@@ -2256,7 +2266,7 @@ export default function ParticipantView({
               <div className="flex-1 p-4 flex flex-col items-center justify-between text-center bg-radial-at-t from-emerald-50/10 to-white">
                 {/* Initials Avatar */}
                 <div className="w-20 h-20 rounded-full bg-emerald-50 border-2 border-[#00AB41] flex items-center justify-center text-2xl font-black text-[#0B3B24] shadow-2xs">
-                  {selectedParticipant.name
+                  {(selectedParticipant.name || "K")
                     .split(" ")
                     .map((n) => n[0])
                     .join("")

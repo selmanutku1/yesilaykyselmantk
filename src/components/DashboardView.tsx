@@ -147,74 +147,13 @@ export default function DashboardView({
   const [copiedPublicCalendarLink, setCopiedPublicCalendarLink] = useState(false);
 
   // --- KAMP FAALİYET RAPORU (SİSTEM LOGLARI) ---
-  const [reportStartDate, setReportStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
-  });
-  const [reportEndDate, setReportEndDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
-  });
 
-  const generateActivityReport = () => {
-    try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      const start = new Date(reportStartDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(reportEndDate);
-      end.setHours(23, 59, 59, 999);
-
-      const filteredLogs = logs.filter(log => {
-        const d = new Date(log.timestamp);
-        return d >= start && d <= end;
-      });
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.setTextColor(15, 23, 42); // slate-900
-      doc.text('KAMP FAALIYET RAPORU (SISTEM)', 105, 20, { align: 'center' });
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(`Tarih Araligi: ${start.toLocaleDateString('tr-TR')} - ${end.toLocaleDateString('tr-TR')}`, 105, 28, { align: 'center' });
-      doc.text(`Olusturan: ${currentUser?.name} (${currentUser?.roleName})`, 105, 34, { align: 'center' });
-      doc.text(`Toplam Islem Sayisi: ${filteredLogs.length}`, 105, 40, { align: 'center' });
-
-      autoTable(doc, {
-        startY: 50,
-        head: [['Tarih/Saat', 'Kullanici', 'Islem Tipi', 'Detaylar']],
-        body: filteredLogs.map(log => [
-          new Date(log.timestamp).toLocaleString('tr-TR'),
-          log.userName,
-          log.action,
-          log.details
-        ]),
-        styles: { fontSize: 8, cellPadding: 2, font: 'helvetica' },
-        headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        margin: { top: 50, right: 15, bottom: 15, left: 15 },
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 'auto' }
-        }
-      });
-
-      doc.save(`Kamp_Faaliyet_Raporu_${reportStartDate}_${reportEndDate}.pdf`);
-      if (onAddLog) {
-        onAddLog('Kamp Faaliyet Raporu', `${start.toLocaleDateString('tr-TR')} - ${end.toLocaleDateString('tr-TR')} tarih aralığı için faaliyet raporu oluşturuldu.`);
-      }
-    } catch (error) {
-      console.error("Rapor oluşturma hatası:", error);
-      alert("Rapor oluşturulurken bir hata oluştu. Lütfen uygulamanın yeni bir sekmede açık olduğundan emin olun.");
-    }
-  };
 
 
   const handleCopyPublicCalendarLink = () => {
-    const publicUrl = window.location.origin + window.location.pathname + '?view=takvim';
+    let baseUrl = window.location.origin + window.location.pathname;
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+    const publicUrl = baseUrl + '/takvim';
     navigator.clipboard.writeText(publicUrl);
     setCopiedPublicCalendarLink(true);
     setTimeout(() => setCopiedPublicCalendarLink(false), 2000);
@@ -912,7 +851,7 @@ export default function DashboardView({
           </div>
           <div className="flex flex-wrap gap-2">
             <a
-              href="?view=takvim"
+              href="./takvim"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer border bg-white hover:bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
@@ -1532,7 +1471,7 @@ export default function DashboardView({
         </div>
         <div className="flex flex-wrap gap-2">
           <a
-            href="?view=takvim"
+            href="./takvim"
             target="_blank"
             rel="noopener noreferrer"
             className="px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer border bg-white hover:bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
@@ -1550,43 +1489,7 @@ export default function DashboardView({
         </div>
       </div>
 
-            {/* KAMP FAALİYET RAPORU WIDGET */}
-      {(currentUser?.role === 'admin' || currentUser?.role === 'mudur') && (
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 print:hidden mb-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-100 text-indigo-700 p-2 rounded-lg shrink-0">
-              <ClipboardCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">Kamp Faaliyet Raporu (Sistem Logları)</h3>
-              <p className="text-xs text-gray-500">Seçtiğiniz tarih aralığındaki tüm sistem işlemlerinin dökümünü alın.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <input 
-              type="date" 
-              value={reportStartDate} 
-              onChange={(e) => setReportStartDate(e.target.value)} 
-              className="text-xs p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-auto"
-            />
-            <span className="text-gray-400 font-bold">-</span>
-            <input 
-              type="date" 
-              value={reportEndDate} 
-              onChange={(e) => setReportEndDate(e.target.value)} 
-              className="text-xs p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-auto"
-            />
-            <button 
-              onClick={generateActivityReport}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 px-4 rounded-lg flex items-center gap-2 transition cursor-pointer shadow-sm shadow-indigo-600/20 whitespace-nowrap"
-            >
-              <FileText className="w-4 h-4" />
-              Oluştur
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Mini Stats Grid */}
+            {/* Mini Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Capacity */}
         <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3.5">
