@@ -1,26 +1,11 @@
 import React, { useState } from 'react';
-import { Send, CheckCircle, MessageSquare, Link, Settings, Plus, Trash2, Edit2 } from 'lucide-react';
-
-interface Question {
-  id: number;
-  text: string;
-  options: string[];
-}
-
-const defaultQuestions: Question[] = [
-  { id: 1, text: "Kamp tesisleri ve konaklama kalitesi?", options: ["Çok Kötü", "Kötü", "Orta", "İyi", "Çok İyi"] },
-  { id: 2, text: "Yemeklerin lezzeti ve çeşitliliği?", options: ["Çok Kötü", "Kötü", "Orta", "İyi", "Çok İyi"] },
-  { id: 3, text: "Sosyal etkinlikler ve atölyeler?", options: ["Çok Kötü", "Kötü", "Orta", "İyi", "Çok İyi"] },
-  { id: 4, text: "Liderlerin rehberliği ve iletişimi?", options: ["Çok Kötü", "Kötü", "Orta", "İyi", "Çok İyi"] },
-];
+import { Send, CheckCircle, MessageSquare, Link, Star } from 'lucide-react';
 
 export default function KampSonuDegerlendirmeRaporu() {
-  const [questions, setQuestions] = useState<Question[]>(defaultQuestions);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   const [comment, setComment] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [editMode, setEditMode] = useState(false);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.origin + window.location.pathname + "?form=kamp-sonu-degerlendirme");
@@ -34,20 +19,18 @@ export default function KampSonuDegerlendirmeRaporu() {
     setSubmitted(true);
   };
 
-  const addQuestion = () => {
-    const newId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1;
-    setQuestions([...questions, { id: newId, text: "Yeni Soru?", options: ["Çok Kötü", "Kötü", "Orta", "İyi", "Çok İyi"] }]);
+  const handleRadioChange = (questionId: string, value: string) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
-  const updateQuestionText = (id: number, text: string) => {
-    setQuestions(questions.map(q => q.id === id ? { ...q, text } : q));
-  };
-
-  const removeQuestion = (id: number) => {
-    setQuestions(questions.filter(q => q.id !== id));
-    const newAnswers = { ...answers };
-    delete newAnswers[id];
-    setAnswers(newAnswers);
+  const handleGridChange = (questionId: string, item: string, value: number) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        ...(prev[questionId] || {}),
+        [item]: value
+      }
+    }));
   };
 
   if (submitted) {
@@ -60,144 +43,229 @@ export default function KampSonuDegerlendirmeRaporu() {
     );
   }
 
-  return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-8 max-w-2xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center">
-            <svg viewBox="0 0 100 100" className="w-10 h-10">
-              <path d="M50 5 C25 5 5 25 5 50 C5 75 25 95 50 95 C75 95 95 75 95 50 C95 25 75 5 50 5 Z" fill="#059669"/>
-              <path d="M70 30 C70 30 55 45 40 60 C35 65 25 55 30 50 C45 35 60 20 60 20 Z" fill="#ffffff"/>
-              <path d="M40 70 C40 70 55 55 70 40 C75 35 85 45 80 50 C65 65 50 80 50 80 Z" fill="#ffffff"/>
-            </svg>
-          </div>
-          <h2 className="text-2xl font-black text-gray-900">Kamp Sonu Değerlendirme Anketi</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setEditMode(!editMode)}
-            className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-bold transition-colors ${editMode ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700'}`}
-          >
-            <Settings className="w-4 h-4" />
-            <span>{editMode ? 'Düzenlemeyi Bitir' : 'Soruları Düzenle'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors"
-          >
-            {linkCopied ? (
-              <>
-                <CheckCircle className="w-4 h-4 text-emerald-600" />
-                <span className="text-emerald-700">Kopyalandı!</span>
-              </>
-            ) : (
-              <>
-                <Link className="w-4 h-4" />
-                <span>Bağlantıyı Kopyala</span>
-              </>
-            )}
-          </button>
-        </div>
+  const renderRadioGroup = (id: string, label: string, options: string[], showOther?: boolean) => (
+    <div className="space-y-3 p-5 bg-gray-50 rounded-xl border border-gray-100">
+      <p className="font-bold text-gray-800">{label}</p>
+      <div className="space-y-2">
+        {options.map(opt => (
+          <label key={opt} className="flex items-center gap-3 cursor-pointer group">
+            <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${answers[id] === opt ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300 bg-white group-hover:border-emerald-400'}`}>
+              {answers[id] === opt && <div className="w-2 h-2 bg-white rounded-full" />}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">{opt}</span>
+          </label>
+        ))}
+        {showOther && (
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${answers[id]?.startsWith('Diğer:') ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300 bg-white group-hover:border-emerald-400'}`}>
+              {answers[id]?.startsWith('Diğer:') && <div className="w-2 h-2 bg-white rounded-full" />}
+            </div>
+            <span className="text-sm text-gray-700 font-medium whitespace-nowrap">Diğer:</span>
+            <input 
+              type="text" 
+              className="flex-1 border-b border-gray-300 bg-transparent focus:border-emerald-500 focus:outline-none text-sm px-1 py-0.5"
+              onChange={(e) => handleRadioChange(id, `Diğer: ${e.target.value}`)}
+              onClick={(e) => {
+                if (!answers[id]?.startsWith('Diğer:')) {
+                  handleRadioChange(id, 'Diğer: ');
+                }
+              }}
+              value={answers[id]?.startsWith('Diğer:') ? answers[id].replace('Diğer: ', '') : ''}
+            />
+          </label>
+        )}
       </div>
-      
-      {editMode && (
-        <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mb-6 space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-              <Edit2 className="w-4 h-4" />
-              Soru Yönetimi
-            </h3>
-            <button
-              type="button"
-              onClick={addQuestion}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Yeni Soru Ekle
-            </button>
-          </div>
-          
-          <div className="space-y-3">
-            {questions.map((q, index) => (
-              <div key={q.id} className="flex items-start gap-3 bg-white p-3 rounded-lg border border-indigo-100/50 shadow-sm">
-                <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 text-xs font-bold mt-1">
-                  {index + 1}
-                </span>
-                <input
-                  type="text"
-                  value={q.text}
-                  onChange={(e) => updateQuestionText(q.id, e.target.value)}
-                  className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeQuestion(q.id)}
-                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-0.5 shrink-0"
-                  title="Soruyu Sil"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            {questions.length === 0 && (
-              <div className="text-center py-4 text-sm font-medium text-indigo-400">
-                Hiç soru bulunmuyor. Yeni soru ekleyebilirsiniz.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+    </div>
+  );
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-6">
-          {questions.map((q, index) => (
-            <div key={q.id} className="space-y-3">
-              <p className="font-bold text-gray-800 flex gap-2">
-                <span className="text-gray-400">{index + 1}.</span> {q.text}
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {q.options.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setAnswers({...answers, [q.id]: opt})}
-                    disabled={editMode}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      answers[q.id] === opt 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    } ${editMode ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
+  const renderGrid = (id: string, label: string, items: string[], maxVal: number = 5) => (
+    <div className="space-y-4 p-5 bg-gray-50 rounded-xl border border-gray-100 overflow-x-auto">
+      <p className="font-bold text-gray-800">{label}</p>
+      <div className="min-w-[500px]">
+        <div className="grid grid-cols-12 gap-2 mb-2 px-2">
+          <div className="col-span-6"></div>
+          {Array.from({length: maxVal}).map((_, i) => (
+            <div key={i} className="col-span-1 text-center font-bold text-xs text-gray-500">{i + 1}</div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div key={item} className={`grid grid-cols-12 gap-2 items-center p-2 rounded-lg ${idx % 2 === 0 ? 'bg-white' : 'bg-transparent'}`}>
+              <div className="col-span-6 text-sm font-medium text-gray-700 pr-4">{item}</div>
+              {Array.from({length: maxVal}).map((_, i) => {
+                const val = i + 1;
+                const isSelected = answers[id]?.[item] === val;
+                return (
+                  <div key={i} className="col-span-1 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => handleGridChange(id, item, val)}
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300 bg-white hover:border-emerald-400'}`}
+                    >
+                      {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
 
-        <div className="space-y-3">
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-8 max-w-3xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center">
+            <svg viewBox="0 0 100 100" className="w-10 h-10 fill-emerald-600">
+              <path d="M52,15 A35,35 0 1,0 85,68 A28,28 0 1,1 85,32 A35,35 0 0,0 52,15 Z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 leading-tight">Kamp Sonu<br/><span className="text-emerald-600">Değerlendirme Anketi</span></h2>
+        </div>
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-bold transition-colors"
+        >
+          {linkCopied ? (
+            <>
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>Kopyalandı!</span>
+            </>
+          ) : (
+            <>
+              <Link className="w-4 h-4" />
+              <span>Bağlantıyı Kopyala</span>
+            </>
+          )}
+        </button>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-8">
+        
+        {/* A. Genel Bilgiler */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-black text-emerald-800 border-b-2 border-emerald-100 pb-2 inline-block">A. Genel Bilgiler</h3>
+          
+          {renderRadioGroup(
+            "q1",
+            "1. Katıldığınız kamp programı türü nedir?",
+            ["Çocuk Kampı", "Gençlik Kampı", "Aile Kampı", "Spor Kampı", "Eğitim / Seminer Kampı", "Uluslararası Kamp"],
+            true
+          )}
+
+          {renderRadioGroup(
+            "q2",
+            "2. Daha önce Yeşilay Yaylagöl Kamp Merkezi'ni ziyaret ettiniz mi?",
+            ["İlk ziyaretim", "2-3 kez", "4 ve üzeri"]
+          )}
+
+          {renderRadioGroup(
+            "q3",
+            "3. Kamp süreniz ne kadardı?",
+            ["1-2 gün", "3-5 gün", "1 hafta ve üzeri"]
+          )}
+        </section>
+
+        {/* B. Genel Memnuniyet Değerlendirmesi */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-black text-emerald-800 border-b-2 border-emerald-100 pb-2 inline-block">B. Genel Memnuniyet Değerlendirmesi</h3>
+          
+          <div className="space-y-3 p-5 bg-gray-50 rounded-xl border border-gray-100">
+            <p className="font-bold text-gray-800">4. Kamp deneyiminizi genel olarak nasıl değerlendirirsiniz?</p>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { val: 1, label: "Çok kötü", stars: 1 },
+                { val: 2, label: "Kötü", stars: 2 },
+                { val: 3, label: "Orta", stars: 3 },
+                { val: 4, label: "İyi", stars: 4 },
+                { val: 5, label: "Çok iyi", stars: 5 }
+              ].map((opt) => (
+                <button
+                  key={opt.val}
+                  type="button"
+                  onClick={() => handleRadioChange("q4", opt.val.toString())}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all flex-1 min-w-[100px] ${answers["q4"] === opt.val.toString() ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'border-gray-200 bg-white hover:border-emerald-300'}`}
+                >
+                  <div className="flex gap-0.5 mb-2">
+                    {Array.from({length: opt.stars}).map((_, i) => (
+                      <Star key={i} className={`w-4 h-4 ${answers["q4"] === opt.val.toString() ? 'fill-emerald-500 text-emerald-500' : 'fill-gray-300 text-gray-300'}`} />
+                    ))}
+                  </div>
+                  <span className={`text-xs font-bold ${answers["q4"] === opt.val.toString() ? 'text-emerald-800' : 'text-gray-600'}`}>
+                    {opt.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {renderGrid(
+            "q5",
+            "5. Aşağıdaki alanlardan memnuniyet düzeyinizi değerlendiriniz. (1-5 Puan)",
+            [
+              "Konaklama alanları",
+              "Yemekhane ve beslenme",
+              "Temizlik ve hijyen",
+              "Kamp çalışanlarının ilgisi",
+              "Güvenlik önlemleri",
+              "Etkinlik çeşitliliği",
+              "Spor imkanları",
+              "Doğal alanların kullanımı"
+            ]
+          )}
+        </section>
+
+        {/* C. Doğa ve Çevre Deneyimi */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-black text-emerald-800 border-b-2 border-emerald-100 pb-2 inline-block">C. Doğa ve Çevre Deneyimi</h3>
+
+          {renderRadioGroup(
+            "q6",
+            "6. Kamp alanındaki doğal çevre deneyiminizi nasıl değerlendirirsiniz?",
+            ["Çok yetersiz", "Yetersiz", "Orta", "İyi", "Çok iyi"]
+          )}
+
+          {renderGrid(
+            "q7",
+            "7. Kamp alanındaki göl alanı deneyiminiz nasıldı? (1-5 Puan)",
+            [
+              "Göl manzarası ve atmosfer",
+              "Göl çevresi yürüyüş alanları",
+              "Dinlenme noktaları",
+              "Fotoğraf alanları",
+              "Doğa ile etkileşim"
+            ]
+          )}
+
+          {renderRadioGroup(
+            "q8",
+            "8. Kamp alanındaki orman ve ağaçlık alanların kullanımını nasıl değerlendirirsiniz?",
+            ["Çok yetersiz", "Yetersiz", "Orta", "İyi", "Çok iyi"]
+          )}
+        </section>
+
+        <div className="space-y-3 pt-4">
           <label className="font-bold text-gray-800 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-indigo-600" />
+            <MessageSquare className="w-5 h-5 text-emerald-600" />
             Yorum ve Açıklamalarınız
           </label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            disabled={editMode}
-            className={`w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[120px] ${editMode ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
-            placeholder="Eklemek istediğiniz diğer düşünceleriniz..."
+            className="w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none min-h-[120px] bg-gray-50"
+            placeholder="Eklemek istediğiniz diğer düşünceleriniz, önerileriniz veya şikayetleriniz..."
           />
         </div>
 
         <button
           type="submit"
-          disabled={editMode || questions.length === 0}
-          className="w-full py-3 bg-indigo-600 text-white rounded-xl font-black hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md flex items-center justify-center gap-2"
+          className="w-full py-4 bg-emerald-600 text-white rounded-xl font-black text-lg hover:bg-emerald-700 transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 mt-4"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-5 h-5" />
           Değerlendirmeyi Gönder
         </button>
       </form>
