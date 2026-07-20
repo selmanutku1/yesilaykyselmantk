@@ -130,6 +130,7 @@ async function startServer() {
 
   // API endpoints
 // Gemini Chatbot Endpoint
+// Gemini Chatbot Endpoint
 app.post('/api/gemini/chat', express.json(), async (req, res) => {
   try {
     const { prompt, history } = req.body;
@@ -228,6 +229,37 @@ Sistem Verisi (Proje İçi Besleme - Sorulara Buradan Yanıt Ver):
       ? 'Günlük kullanım limitiniz doldu. Lütfen bir süre bekleyin.' 
       : 'Chatbot şu anda yanıt veremiyor.';
     res.status(status).json({ error: message });
+  }
+});
+
+
+// Weather API proxy endpoint
+app.get('/api/weather', async (req, res) => {
+  const { city, forecast } = req.query;
+  if (!city) {
+    return res.status(400).json({ error: 'City is required' });
+  }
+
+  try {
+    const apiKey = process.env.WEATHER_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Weather API key not configured' });
+    }
+    
+    // Using OpenWeatherMap API
+    const baseUrl = forecast 
+      ? `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(String(city))}&appid=${apiKey}&units=metric&lang=tr`
+      : `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(String(city))}&appid=${apiKey}&units=metric&lang=tr`;
+    
+    const response = await fetch(baseUrl);
+    if (!response.ok) {
+        return res.status(response.status).json({ error: 'Failed to fetch weather' });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    console.error('Weather API Error:', err);
+    res.status(500).json({ error: 'Failed to fetch weather data' });
   }
 });
 

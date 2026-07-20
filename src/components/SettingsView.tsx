@@ -54,7 +54,8 @@ const ROLE_PRESETS = {
   saglik: { name: 'Sağlık Sorumlusu / Hemşire', tabs: ['revir', 'katilimci', 'olay-kayit'] },
   yemekhane: { name: 'Yemekhane Görevlisi', tabs: ['yemekhane'] },
   teknik: { name: 'Teknik Sorumlu', tabs: ['teknik'] },
-  guvenlik: { name: 'Güvenlik Sorumlusu', tabs: ['guvenlik', 'katilimci', 'olay-kayit'] }
+  guvenlik: { name: 'Güvenlik Sorumlusu', tabs: ['guvenlik', 'katilimci', 'olay-kayit'] },
+  gonullu: { name: 'Gönüllü Yönetimi', tabs: ['dashboard', 'kayit', 'kamp-planlama'] }
 };
 
 const ALL_TABS_LIST: { key: string; label: string; desc: string }[] = [
@@ -971,6 +972,7 @@ export default function SettingsView({
                     <option value="yemekhane">Yemekhane Görevlisi</option>
                     <option value="teknik">Teknik Sorumlu</option>
                     <option value="guvenlik">Güvenlik Sorumlusu</option>
+                    <option value="gonullu">Gönüllü Yönetimi</option>
                     <option value="admin">Sistem Yöneticisi</option>
                   </select>
                 </div>
@@ -1000,13 +1002,18 @@ export default function SettingsView({
                       return;
                     }
                     const preset = ROLE_PRESETS[newUserRole];
+                    let passwordHash = '6b5f40c09215713a1fa83ea2de2adcae17e605b8958a2d7379e15b561687ee8f'; // 1920
+                    if (['admin', 'mudur'].includes(newUserRole)) {
+                      passwordHash = '55c5de31ec754ba40fb1687ff4f4e0d95142f5ca2765c4839b618329190a434b'; // 4509
+                    }
                     const newUser: LoginUser = {
                       id: `S${String(users.length + 1).padStart(2, '0')}`,
                       name: newUserName.trim(),
                       username: newUserUsername.trim().toLowerCase(),
                       role: newUserRole,
                       roleName: preset.name,
-                      allowedTabs: preset.tabs as any
+                      allowedTabs: preset.tabs as any,
+                      password: passwordHash
                     };
 
                     onUpdateUsers([...users, newUser]);

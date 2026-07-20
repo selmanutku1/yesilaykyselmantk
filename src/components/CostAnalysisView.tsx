@@ -35,7 +35,9 @@ import {
   BookOpen,
   Edit2,
   FileSpreadsheet,
-  FileText
+  FileText,
+  Wrench,
+  HeartPulse
 } from 'lucide-react';
 import { Participant, CampPeriod, Expense, SystemLog } from '../types';
 import { 
@@ -58,6 +60,16 @@ interface CostAnalysisViewProps {
   onUpdateExpenses: (expenses: Expense[]) => void;
   onAddLog: (action: string, details: string, overrideUser?: any, undoData?: SystemLog['undoData']) => void;
 }
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'Gıda': return <Utensils className="w-4 h-4 text-emerald-500" />;
+    case 'Teknik': return <Wrench className="w-4 h-4 text-amber-500" />;
+    case 'Personel': return <Users className="w-4 h-4 text-blue-500" />;
+    case 'Sağlık': return <HeartPulse className="w-4 h-4 text-rose-500" />;
+    default: return <Layers className="w-4 h-4 text-gray-400" />;
+  }
+};
 
 export default function CostAnalysisView({ participants, periods, expenses, onUpdateExpenses, onAddLog }: CostAnalysisViewProps) {
   // Period Selection State
@@ -1355,8 +1367,11 @@ export default function CostAnalysisView({ participants, periods, expenses, onUp
                       return (
                         <tr key={expense.id} className="hover:bg-gray-50/50 transition">
                           <td className="p-3">
-                            <div className="font-bold text-gray-900">{expense.name}</div>
-                            <div className="text-gray-400 text-3xs font-mono">{expense.id}</div>
+                            <div className="flex items-center gap-2">
+                               {getCategoryIcon(expense.category)}
+                               <div className="font-bold text-gray-900">{expense.name}</div>
+                             </div>
+                            <div className="text-gray-400 text-3xs font-mono ml-6">{expense.id}</div>
                           </td>
                           <td className="p-3">
                             <span className={`inline-block px-2.5 py-1 rounded-full text-3xs font-extrabold border ${colors.bg} ${colors.text} ${colors.border}`}>

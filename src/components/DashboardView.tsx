@@ -44,10 +44,14 @@ import {
   MapPin,
   HelpCircle,
   Mic,
+  Maximize2,
+  Minimize2,
+  Cloud,
 } from 'lucide-react';
 import PeriodManagementView from './PeriodManagementView';
 import { HelpTooltip } from './HelpTooltip';
 import { signInWithGoogle, getCachedToken, logoutGoogle, auth } from '../utils/firebaseAuth';
+import { WeatherWidget } from './WeatherWidget';
 
 interface DashboardViewProps {
   participants: Participant[];
@@ -94,6 +98,9 @@ export default function DashboardView({
   
   const [selectedPeriodDetail, setSelectedPeriodDetail] = useState<CampPeriod | null>(null);
   const [showPeriodParticipants, setShowPeriodParticipants] = useState(false);
+  
+  const selectedCampCenter = campCenters.find(c => c.id === selectedCampCenterId);
+  const selectedCity = selectedCampCenter?.city || 'Istanbul';
   const [editingPeriod, setEditingPeriod] = useState<CampPeriod | null>(null);
 
   const [copiedCenterId, setCopiedCenterId] = useState<string | null>(null);
@@ -134,9 +141,38 @@ export default function DashboardView({
   // Google Calendar View & Navigation states
   const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
   const [calendarReferenceDate, setCalendarReferenceDate] = useState<Date>(new Date('2026-06-18'));
+  const [isCalendarFullscreen, setIsCalendarFullscreen] = useState(false);
+
+  const toggleCalendarFullscreen = () => {
+    const docEl = document.documentElement;
+    if (!isCalendarFullscreen) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().then(() => {
+          setIsCalendarFullscreen(true);
+        }).catch((err) => {
+          console.error("Fullscreen request failed, applying fallback layout:", err);
+          setIsCalendarFullscreen(true);
+        });
+      } else {
+        setIsCalendarFullscreen(true);
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          setIsCalendarFullscreen(false);
+        }).catch((err) => {
+          console.error("Exit fullscreen failed, resetting fallback layout:", err);
+          setIsCalendarFullscreen(false);
+        });
+      } else {
+        setIsCalendarFullscreen(false);
+      }
+    }
+  };
 
   // Manual Activity creation states
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
+  const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [newActTitle, setNewActTitle] = useState('');
   const [newActType, setNewActType] = useState<'Spor' | 'Atölye' | 'Eğitim' | 'Seminer' | 'Eğlence'>('Eğitim');
   const [newActDate, setNewActDate] = useState('2026-08-01');
@@ -863,7 +899,7 @@ export default function DashboardView({
         </div>
 
         {/* Günlük Kamp Programı */}
-        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm print:hidden">
+        <div className={`bg-white p-5 rounded-xl border border-gray-100 shadow-sm print:hidden ${isCalendarFullscreen ? 'fixed inset-0 z-[100] m-0 rounded-none w-full h-full overflow-y-auto' : ''}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-3 mb-4">
             <div>
               <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
@@ -872,6 +908,16 @@ export default function DashboardView({
                 <HelpTooltip content="Kamp programındaki aktiviteleri bu alandan takip edebilirsiniz." />
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">Aylık, haftalık ve günlük görünümler arasında geçiş yaparak kamp programını takip edin.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleCalendarFullscreen}
+                className="p-1.5 md:p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition flex items-center justify-center cursor-pointer border border-gray-200/50 dark:border-gray-700"
+                title={isCalendarFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
+              >
+                {isCalendarFullscreen ? <Minimize2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Maximize2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
+              </button>
             </div>
           </div>
 
@@ -1486,8 +1532,28 @@ export default function DashboardView({
             <FileText className="w-4 h-4" />
             Dönem Sonu Verimlilik Raporu (PDF)
           </button>
+          <button 
+            onClick={() => setIsWeatherModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm shadow-blue-600/20"
+          >
+            <Cloud className="w-4 h-4" />
+          </button>
         </div>
       </div>
+      
+      {isWeatherModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-150 dark:border-gray-800 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-bold">Hava Durumu</h3>
+              <button onClick={() => setIsWeatherModalOpen(false)} className="text-gray-500 cursor-pointer">✕</button>
+            </div>
+            <div className="p-4">
+              <WeatherWidget city={selectedCity} />
+            </div>
+          </div>
+        </div>
+      )}
 
             {/* Mini Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
@@ -1558,7 +1624,7 @@ export default function DashboardView({
       </div>
 
       {/* Günlük Kamp Programı & Google Calendar Takvimi */}
-      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm print:hidden">
+      <div className={`bg-white p-5 rounded-xl border border-gray-100 shadow-sm print:hidden ${isCalendarFullscreen ? 'fixed inset-0 z-[100] m-0 rounded-none w-full h-full overflow-y-auto' : ''}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-3 mb-4">
           <div>
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
@@ -1569,6 +1635,14 @@ export default function DashboardView({
             <p className="text-xs text-gray-500 mt-0.5">Katılımcıların ve eğitmenlerin günlük aktivitelerini yönetin.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleCalendarFullscreen}
+              className="p-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+              title={isCalendarFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
+            >
+              {isCalendarFullscreen ? <Minimize2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Maximize2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
+            </button>
             <button
               onClick={() => setIsGoogleCalendarModalOpen(true)}
               className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer"

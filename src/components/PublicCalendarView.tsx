@@ -29,9 +29,32 @@ export default function PublicCalendarView({ activities, campCenters }: PublicCa
   // Local active theme state to toggle light/dark
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // Use CSS-based fullscreen to avoid iframe restrictions
+  // Attempt native fullscreen, fallback to CSS-based fullscreen
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    const docEl = document.documentElement;
+    if (!isFullscreen) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().then(() => {
+          setIsFullscreen(true);
+        }).catch((err) => {
+          console.error("Fullscreen request failed, applying fallback layout:", err);
+          setIsFullscreen(true);
+        });
+      } else {
+        setIsFullscreen(true);
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          setIsFullscreen(false);
+        }).catch((err) => {
+          console.error("Exit fullscreen failed, resetting fallback layout:", err);
+          setIsFullscreen(false);
+        });
+      } else {
+        setIsFullscreen(false);
+      }
+    }
   };
 
   useEffect(() => {

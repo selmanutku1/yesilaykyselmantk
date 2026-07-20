@@ -106,6 +106,7 @@ export interface Bungalow {
   capacity: number; // 4 or 6
   campCenterId: string;
   isClosed?: boolean; // Geçici süre kapatma
+  closedBeds?: number[]; // e.g. [5, 6]
 }
 
 export interface Group {

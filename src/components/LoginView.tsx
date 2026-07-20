@@ -14,6 +14,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { LoginUser } from '../App';
+import { hashPassword } from '../utils';
 
 interface LoginViewProps {
   users: LoginUser[];
@@ -84,7 +85,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const foundUser = users.find(
         (u) => u.username.toLowerCase() === username.trim().toLowerCase()
       );
@@ -95,22 +96,11 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
         return;
       }
 
-      if (foundUser.role === 'admin') {
-        // 4-digit passcode check for admin (1920 or 1234)
-        if (password === '1920' || password === '1234') {
-          onLogin(foundUser);
-        } else {
-          setError('Hatalı Şifre! Sistem Yöneticisi girişi için geçerli şifreyi giriniz. (Şifre: 1920)');
-        }
+      const hashedInput = await hashPassword(password);
+      if (foundUser.password === hashedInput) {
+        onLogin(foundUser);
       } else {
-        // For other roles, passcode 4509 is required
-        if (password === '4509') {
-          onLogin(foundUser);
-        } else {
-          setPendingUser(foundUser);
-          setPasscode('');
-          setPasscodeError('');
-        }
+        setError('Hatalı Şifre!');
       }
       setIsLoading(false);
     }, 450);
@@ -118,32 +108,19 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
 
   const handlePresetClick = (user: LoginUser) => {
     setError('');
-    if (user.role === 'admin') {
-      setUsername(user.username);
-      setPassword('1920');
-      
-      // Quick directly login
-      setIsLoading(true);
-      setTimeout(() => {
-        onLogin(user);
-        setIsLoading(false);
-      }, 300);
-    } else {
-      setPendingUser(user);
-      setPasscode('');
-      setPasscodeError('');
-    }
+    setPendingUser(user);
+    setPasscode('');
+    setPasscodeError('');
   };
 
-  const handlePasscodeSubmit = (e: React.FormEvent) => {
+  const handlePasscodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasscodeError('');
 
-    if (passcode === '4509') {
-      if (pendingUser) {
-        onLogin(pendingUser);
-        setPendingUser(null);
-      }
+    const hashedInput = await hashPassword(passcode);
+    if (pendingUser && hashedInput === pendingUser.password) {
+      onLogin(pendingUser);
+      setPendingUser(null);
     } else {
       setPasscodeError('Hatalı geçiş kodu! Lütfen doğru kodu giriniz.');
     }
@@ -227,7 +204,7 @@ export default function LoginView({ onLogin, users }: LoginViewProps) {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <span className="text-[10px] text-gray-400 font-semibold block mt-1">Sistem Yöneticisi şifresi: <strong className="text-emerald-700 font-extrabold">1920</strong></span>
+              <span className="text-[10px] text-gray-400 font-semibold block mt-1">Giriş için kullanıcı adınızı ve şifrenizi giriniz.</span>
             </div>
 
             <button

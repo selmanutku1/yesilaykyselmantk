@@ -72,8 +72,8 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
   const handleVerify = (codeToVerify?: string) => {
     const code = codeToVerify !== undefined ? codeToVerify : passcode;
     
-    const adminPasswords = ['1920', '1234'];
-    const personnelPasscode = '4509';
+    const adminPasswords = ['1920'];
+    const personnelPasscode = '1920';
 
     // Allow correct credentials based on role or master codes
     const isAdmin = currentUser?.role === 'admin';
@@ -91,11 +91,7 @@ export default function Screensaver({ currentUser, onDismiss }: ScreensaverProps
   };
 
   const getExpectedPasscodeHint = () => {
-    if (currentUser?.role === 'admin') {
-      return "Yönetici Giriş Şifresi: 1920 veya 1234";
-    } else {
-      return `Personel Giriş Şifresi: 4509 (${currentUser?.roleName || 'Saha Sorumlusu'})`;
-    }
+    return "Giriş Şifresi: 1920";
   };
 
   const formatTime = (date: Date) => {

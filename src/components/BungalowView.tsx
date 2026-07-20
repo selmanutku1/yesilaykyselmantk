@@ -145,6 +145,15 @@ export default function BungalowView({
     message: string;
   } | null>(null);
 
+    const [bulkCapacityConfirm, setBulkCapacityConfirm] = useState<{
+    isOpen: boolean;
+    newCapacity: number;
+    modifiedBungalowCount: number;
+    ejectedParticipantCount: number;
+    updatedParticipants: any[];
+    updatedBungalows: any[];
+  } | null>(null);
+  
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -631,7 +640,8 @@ export default function BungalowView({
   };
 
   // Specific Bungalows for ONLY the selected Center
-  const centerBungalows = bungalows.filter(
+  const bungalowsToUse = bulkCapacityConfirm ? bulkCapacityConfirm.updatedBungalows : bungalows;
+  const centerBungalows = bungalowsToUse.filter(
     (b) => b.campCenterId === selectedCenterId,
   );
 
@@ -1025,6 +1035,52 @@ export default function BungalowView({
     );
   };
 
+  const handleBulkCapacityChange = (targetCapacity: number) => {
+    let updatedParticipants = [...participants];
+    let updatedBungalows = [...bungalows];
+    let modifiedBungalowCount = 0;
+    let ejectedParticipantCount = 0;
+
+    updatedBungalows = updatedBungalows.map(bg => {
+      if (bg.campCenterId !== selectedCenterId || bg.type !== 'Standart') return bg;
+      
+      const newCapacity = targetCapacity;
+      const newClosedBeds = targetCapacity === 4 ? [5, 6] : [];
+
+      if (bg.capacity !== newCapacity || bg.closedBeds?.toString() !== newClosedBeds.toString()) {
+        
+        // Find participants to eject if we are closing beds
+        const occupantsToEject = updatedParticipants.filter(p => p.bungalowId === bg.id && p.bedNumber && newClosedBeds.includes(p.bedNumber));
+        if (occupantsToEject.length > 0) {
+          ejectedParticipantCount += occupantsToEject.length;
+          updatedParticipants = updatedParticipants.map(p => {
+            if (p.bungalowId === bg.id && p.bedNumber && newClosedBeds.includes(p.bedNumber)) {
+              return { ...p, bungalowId: null, bedNumber: null };
+            }
+            return p;
+          });
+        }
+        
+        modifiedBungalowCount++;
+        return { ...bg, capacity: newCapacity, closedBeds: newClosedBeds };
+      }
+      return bg;
+    });
+
+    if (modifiedBungalowCount > 0) {
+      setBulkCapacityConfirm({
+        isOpen: true,
+        newCapacity: targetCapacity, // For display
+        modifiedBungalowCount,
+        ejectedParticipantCount,
+        updatedParticipants,
+        updatedBungalows
+      });
+    } else {
+      alert("Odalar zaten bu kapasitede.");
+    }
+  };
+
   const handleAdd100Participants = () => {
     const boyNames = [
       "Ahmet",
@@ -1192,7 +1248,11 @@ export default function BungalowView({
     (p) => p.bungalowId && centerBungalows.some((b) => b.id === p.bungalowId),
   ).length;
 
-  const totalCapacity = centerBungalows.reduce((sum, b) => sum + b.capacity, 0);
+  const totalCapacity = centerBungalows.reduce((sum, b) => {
+    const closedCount = b.closedBeds ? b.closedBeds.length : 0;
+    const capacity = b.capacity - closedCount;
+    return sum + capacity;
+  }, 0);
   const emptyBedsCount = totalCapacity - centerOccupantsCount;
 
   return (
@@ -1223,6 +1283,22 @@ export default function BungalowView({
         </div>
 
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 self-stretch sm:self-auto shrink-0">
+          <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1 mr-1">
+            <button
+              onClick={() => handleBulkCapacityChange(4)}
+              className="px-3 py-1.5 rounded-md text-xs font-bold text-gray-700 hover:bg-white hover:shadow-sm transition"
+              title="Tüm bungalovları 4 yataklı düzene geçirir"
+            >
+              4'lü Düzen
+            </button>
+            <button
+              onClick={() => handleBulkCapacityChange(6)}
+              className="px-3 py-1.5 rounded-md text-xs font-bold text-gray-700 hover:bg-white hover:shadow-sm transition"
+              title="Tüm bungalovları 6 yataklı düzene geçirir"
+            >
+              6'lı Düzen
+            </button>
+          </div>
           {isDeleteMode ? (
             <>
               <button
@@ -1394,6 +1470,7 @@ export default function BungalowView({
                 <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
                   {bg.isClosed ? <div className="col-span-3 text-[7px] font-bold text-center text-gray-400 py-1">KULLANIM DIŞI</div> : Array.from({ length: bg.capacity }).map((_, idx) => {
                     const bedNum = idx + 1;
+                    if (bg.closedBeds?.includes(bedNum)) return null;
                     const occupier = occupants.find((o) => o.bedNumber === bedNum);
 
                     return (
@@ -1525,6 +1602,42 @@ export default function BungalowView({
                 className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg shadow-sm hover:bg-red-700 transition flex items-center gap-1.5 text-xs"
               >
                 Boşaltmayı Başlat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {/* Bulk Capacity Confirmation Modal */}
+      {bulkCapacityConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-xs animate-in fade-in duration-200 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-lg text-gray-900 mb-2">Düzen Değişikliği Onayı</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {bulkCapacityConfirm.modifiedBungalowCount} bungalovun kapasitesi {bulkCapacityConfirm.newCapacity}'e düşürüldü.
+              {bulkCapacityConfirm.ejectedParticipantCount > 0 && (
+                <span className="block mt-2 text-red-600 font-bold">
+                  ⚠️ {bulkCapacityConfirm.ejectedParticipantCount} katılımcı yerinden çıkarıldı!
+                </span>
+              )}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setBulkCapacityConfirm(null)}
+                className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => {
+                  onUpdateBungalows(bulkCapacityConfirm.updatedBungalows);
+                  onUpdateParticipants(bulkCapacityConfirm.updatedParticipants);
+                  setBulkCapacityConfirm(null);
+                }}
+                className="px-4 py-2 text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg transition"
+              >
+                Onayla ve Uygula
               </button>
             </div>
           </div>
@@ -2940,10 +3053,12 @@ export default function BungalowView({
                     <div className="space-y-2">
                       {Array.from({ length: bg.capacity }).map((_, idx) => {
                         const bedNum = idx + 1;
+                        const isClosedBed = bg.closedBeds?.includes(bedNum);
+                        if (isClosedBed) return null;
                         const occupant = occupants.find((o) => o.bedNumber === bedNum);
-                      const isMatched = occupant ? isParticipantMatched(occupant) : false;
+                        const isMatched = occupant ? isParticipantMatched(occupant) : false;
 
-                      return (
+                        return (
                         <div
                           key={bedNum}
                           data-bed-number={bedNum}
